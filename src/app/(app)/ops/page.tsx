@@ -52,22 +52,26 @@ export default async function OpsPage() {
     <div>
       <PageHeader title="Ops Dashboard" sub="Manager view — next 14 days" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
         {/* Upcoming Events */}
-        <section>
+        <section className="flex flex-col">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-3">
             Upcoming Events ({upcoming.length})
           </h2>
-          <div className="border border-border rounded-lg divide-y divide-border bg-surface">
+          <div className="border border-border rounded-lg divide-y divide-border bg-surface flex-1">
             {upcoming.length === 0
-              ? <p className="text-xs text-text-3 p-4">No events in the next 14 days.</p>
+              ? (
+                <div className="flex items-center justify-center min-h-[72px]">
+                  <p className="text-xs text-text-3">No events in the next 14 days.</p>
+                </div>
+              )
               : upcoming.map((ev) => (
                 <Link key={ev.id} href={`/events/${ev.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-hover transition-colors">
-                  <div>
-                    <p className="text-sm font-medium">{ev.name}</p>
-                    <p className="text-xs text-text-3 mt-0.5">
+                  className="flex items-center justify-between px-4 py-3 hover:bg-hover transition-colors first:rounded-t-lg last:rounded-b-lg">
+                  <div className="min-w-0 mr-3">
+                    <p className="text-sm font-medium truncate">{ev.name}</p>
+                    <p className="text-xs text-text-3 mt-0.5 truncate">
                       {fmtDate(ev.eventDate)}{ev.venue ? ` · ${ev.venue}` : ""}
                     </p>
                   </div>
@@ -79,17 +83,21 @@ export default async function OpsPage() {
         </section>
 
         {/* Overdue Tasks */}
-        <section>
+        <section className="flex flex-col">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-3">
             Overdue Tasks ({overdueTasks.length})
           </h2>
-          <div className="border border-border rounded-lg divide-y divide-border bg-surface">
+          <div className="border border-border rounded-lg divide-y divide-border bg-surface flex-1">
             {overdueTasks.length === 0
-              ? <p className="text-xs text-text-3 p-4">No overdue tasks.</p>
+              ? (
+                <div className="flex items-center justify-center min-h-[72px]">
+                  <p className="text-xs text-text-3">No overdue tasks.</p>
+                </div>
+              )
               : overdueTasks.map(({ task, event }) => (
-                <div key={task.id} className="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">{task.title}</p>
+                <div key={task.id} className="flex items-center justify-between px-4 py-3 first:rounded-t-lg last:rounded-b-lg">
+                  <div className="min-w-0 mr-3">
+                    <p className="text-sm font-medium truncate">{task.title}</p>
                     <p className="text-xs text-text-3 mt-0.5">
                       Due {fmtDate(task.dueDate)}
                       {event ? (
@@ -105,19 +113,23 @@ export default async function OpsPage() {
         </section>
 
         {/* Pending Work Orders */}
-        <section className="md:col-span-2">
+        <section className="md:col-span-2 flex flex-col">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-3">
             Pending Work Orders ({pendingWOs.length})
           </h2>
           <div className="border border-border rounded-lg divide-y divide-border bg-surface">
             {pendingWOs.length === 0
-              ? <p className="text-xs text-text-3 p-4">No pending work orders.</p>
+              ? (
+                <div className="flex items-center justify-center min-h-[72px]">
+                  <p className="text-xs text-text-3">No pending work orders.</p>
+                </div>
+              )
               : pendingWOs.map(({ wo, supplier }) => (
-                <Link key={wo.id} href={`/work-orders`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-hover transition-colors">
-                  <div>
+                <Link key={wo.id} href="/work-orders"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-hover transition-colors first:rounded-t-lg last:rounded-b-lg">
+                  <div className="min-w-0 mr-3">
                     <p className="text-sm font-medium">{wo.number}</p>
-                    <p className="text-xs text-text-3 mt-0.5">
+                    <p className="text-xs text-text-3 mt-0.5 truncate">
                       {supplier?.name ?? "Unknown supplier"}
                       {wo.dueDate ? ` · Due ${fmtDate(wo.dueDate)}` : ""}
                       {wo.amount ? ` · $${Number(wo.amount).toLocaleString()}` : ""}
