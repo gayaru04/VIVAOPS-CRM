@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   events, clients, tasks, comms, quotes, files,
   workOrders, suppliers, runSheetItems,
+  checklistTemplates, eventChecklists, eventChecklistItems,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -10,12 +11,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { fmtDate, fmtMoney } from "@/lib/utils";
-import { updateEventStage } from "@/server/actions/events";
+import { updateEventStage, cloneEvent } from "@/server/actions/events";
 import { updateTaskStatus } from "@/server/actions/tasks";
 import { createComm } from "@/server/actions/comms";
 import { createRunSheetItem } from "@/server/actions/run-sheet";
+import { deleteFile } from "@/server/actions/files";
+import { applyTemplateToEvent, toggleChecklistItem } from "@/server/actions/checklists";
+import { FileUploadForm } from "./file-upload-form";
+import { getSignedUrl } from "@/lib/storage";
 import Link from "next/link";
-import { CalendarDays, MapPin, Users, DollarSign, Plus } from "lucide-react";
+import { CalendarDays, MapPin, Users, DollarSign, Plus, Copy, Download, Trash2, CheckSquare, Square } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectInput } from "@/components/ui/select-input";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -36,17 +41,45 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
   const { event, client } = row;
 
-  const [eventTasks, eventComms, eventQuotes, eventFiles, eventWOs, eventRunSheet] = await Promise.all([
+  const [eventTasks, eventComms, eventQuotes, rawFiles, eventWOs, eventRunSheet, eventChecklistsRaw, allTemplates] = await Promise.all([
     db.select().from(tasks).where(eq(tasks.eventId, event.id)),
     db.select().from(comms).where(eq(comms.eventId, event.id)).orderBy(comms.sentAt),
     db.select().from(quotes).where(eq(quotes.eventId, event.id)),
-    db.select().from(files).where(eq(files.eventId, event.id)),
+    db.select().from(files).where(eq(files.eventId, event.id)).orderBy(files.createdAt),
     db.select({ wo: workOrders, supplier: suppliers })
       .from(workOrders)
       .leftJoin(suppliers, eq(workOrders.supplierId, suppliers.id))
       .where(eq(workOrders.eventId, event.id)),
     db.select().from(runSheetItems).where(eq(runSheetItems.eventId, event.id)).orderBy(runSheetItems.time),
+    db.select().from(eventChecklists).where(eq(eventChecklists.eventId, event.id)),
+    db.select().from(checklistTemplates).where(eq(checklistTemplates.orgId, user.orgId)),
   ]);
+
+  // Attach signed URLs to files
+  const eventFiles = await Promise.all(
+    rawFiles.map(async (f) => {
+      try {
+        const url = await getSignedUrl(f.storagePath);
+        return { ...f, url };
+      } catch {
+        return { ...f, url: null };
+      }
+    })
+  );
+
+  // Attach items to each checklist
+  const eventChecklists2 = await Promise.all(
+    eventChecklistsRaw.map(async (cl) => {
+      const items = await db
+        .select()
+        .from(eventChecklistItems)
+        .where(eq(eventChecklistItems.checklistId, cl.id))
+        .orderBy(eventChecklistItems.sortOrder);
+      return { ...cl, items };
+    })
+  );
+
+  const totalChecklistItems = eventChecklists2.reduce((s, cl) => s + cl.items.length, 0);
 
   const daysToGo = event.eventDate
     ? Math.ceil((new Date(event.eventDate).getTime() - Date.now()) / 86_400_000)
@@ -94,10 +127,22 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
               <Button asChild variant="outline" size="sm">
                 <Link href={`/events/${event.id}/edit`}>Edit</Link>
               </Button>
+              {event.eventDate && (
+                <Button asChild variant="outline" size="sm">
+                  <a href={`/api/events/${event.id}/ical`} download>
+                    <CalendarDays className="h-3.5 w-3.5" /> Add to Calendar
+                  </a>
+                </Button>
+              )}
+              <form action={cloneEvent.bind(null, event.id)}>
+                <SubmitButton variant="outline" size="sm" pendingText="Cloning…">
+                  <Copy className="h-3.5 w-3.5" /> Clone
+                </SubmitButton>
+              </form>
               <Button asChild variant="outline" size="sm">
                 <Link href={`/events/${event.id}/run-sheet`}>Print run sheet</Link>
               </Button>
@@ -130,13 +175,14 @@ export default async function EventDetailPage({ params }: { params: { id: string
       <Tabs defaultValue="overview" className="flex flex-col flex-1 min-h-0">
         <TabsList className="px-7 border-b border-border bg-background rounded-none justify-start h-auto py-0 gap-0">
           {[
-            ["overview",   "Overview"],
-            ["tasks",      `Tasks (${eventTasks.length})`],
-            ["comms",      `Comms (${eventComms.length})`],
-            ["quotes",     `Quotes (${eventQuotes.length})`],
-            ["files",      `Files (${eventFiles.length})`],
-            ["workorders", `Work Orders (${eventWOs.length})`],
-            ["runsheet",   `Run Sheet (${eventRunSheet.length})`],
+            ["overview",    "Overview"],
+            ["tasks",       `Tasks (${eventTasks.length})`],
+            ["comms",       `Comms (${eventComms.length})`],
+            ["quotes",      `Quotes (${eventQuotes.length})`],
+            ["files",       `Files (${eventFiles.length})`],
+            ["checklists",  `Checklists (${totalChecklistItems})`],
+            ["workorders",  `Work Orders (${eventWOs.length})`],
+            ["runsheet",    `Run Sheet (${eventRunSheet.length})`],
           ].map(([value, label]) => (
             <TabsTrigger
               key={value}
@@ -326,15 +372,98 @@ export default async function EventDetailPage({ params }: { params: { id: string
           </TabsContent>
 
           <TabsContent value="files">
-            <div className="flex flex-col gap-2 max-w-2xl">
+            <div className="flex flex-col gap-4 max-w-2xl">
+              <FileUploadForm eventId={event.id} />
               {eventFiles.length === 0
-                ? <p className="text-[13px] text-text-3">No files uploaded.</p>
-                : eventFiles.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between bg-surface border border-border rounded-lg px-4 py-3">
-                    <p className="text-[13px] text-foreground">{f.name}</p>
-                    <p className="text-[11.5px] text-text-3 tabular-nums">{fmtDate(f.createdAt.toISOString())}</p>
+                ? <p className="text-[13px] text-text-3">No files uploaded yet.</p>
+                : (
+                  <div className="border border-border rounded-lg overflow-hidden bg-surface divide-y divide-border">
+                    {eventFiles.map((f) => (
+                      <div key={f.id} className="flex items-center justify-between px-4 py-3 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-foreground truncate">{f.name}</p>
+                          <p className="text-[11.5px] text-text-3 mt-0.5">
+                            {f.size ? `${(f.size / 1024).toFixed(0)} KB · ` : ""}
+                            {fmtDate(f.createdAt.toISOString())}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {f.url && (
+                            <a
+                              href={f.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-border bg-surface text-[12px] text-foreground hover:bg-hover transition-colors"
+                            >
+                              <Download className="h-3 w-3" /> Download
+                            </a>
+                          )}
+                          <form action={deleteFile.bind(null, f.id)}>
+                            <SubmitButton variant="outline" size="sm" pendingText="…" className="h-7 px-2 text-red-500 hover:text-red-600 border-border">
+                              <Trash2 className="h-3 w-3" />
+                            </SubmitButton>
+                          </form>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )
+              }
+            </div>
+          </TabsContent>
+
+          <TabsContent value="checklists">
+            <div className="flex flex-col gap-5 max-w-2xl">
+              {/* Apply template */}
+              {allTemplates.length > 0 && (
+                <form action={applyTemplateToEvent} className="flex items-center gap-3">
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <SelectInput name="templateId" className="flex-1 max-w-xs" required>
+                    <option value="">Select a template…</option>
+                    {allTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </SelectInput>
+                  <SubmitButton size="sm" pendingText="Applying…">Apply Template</SubmitButton>
+                  <Link href="/checklists" className="text-[12px] text-text-3 hover:text-foreground underline underline-offset-2">Manage templates</Link>
+                </form>
+              )}
+              {allTemplates.length === 0 && (
+                <p className="text-[13px] text-text-3">
+                  No templates yet. <Link href="/checklists" className="underline underline-offset-2 hover:text-foreground">Create one in Checklists.</Link>
+                </p>
+              )}
+
+              {/* Checklists */}
+              {eventChecklists2.length === 0
+                ? <p className="text-[13px] text-text-3">No checklists applied to this event.</p>
+                : eventChecklists2.map((cl) => (
+                  <div key={cl.id} className="border border-border rounded-lg overflow-hidden bg-surface">
+                    <div className="px-4 py-2.5 border-b border-border">
+                      <p className="text-[13px] font-semibold text-foreground">{cl.name}</p>
+                      <p className="text-[11.5px] text-text-3 mt-0.5">
+                        {cl.items.filter((i) => i.status === "done").length}/{cl.items.length} done
+                      </p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {cl.items.map((item) => (
+                        <form key={item.id} action={toggleChecklistItem.bind(null, item.id, event.id, item.status)}>
+                          <button type="submit" className="w-full flex items-start gap-3 px-4 py-3 hover:bg-hover transition-colors text-left">
+                            {item.status === "done"
+                              ? <CheckSquare className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                              : <Square className="h-4 w-4 text-text-3 mt-0.5 flex-shrink-0" />
+                            }
+                            <div className="min-w-0">
+                              <p className={`text-[13px] ${item.status === "done" ? "line-through text-text-3" : "text-foreground"}`}>{item.title}</p>
+                              {item.description && <p className="text-[11.5px] text-text-3 mt-0.5">{item.description}</p>}
+                            </div>
+                          </button>
+                        </form>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              }
             </div>
           </TabsContent>
 

@@ -1,10 +1,10 @@
 "use server";
 import { db } from "@/lib/db";
-import { events, eventStageHistory } from "@/lib/db/schema";
+import { events, eventStageHistory, tasks, runSheetItems } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { createEventSchema, updateEventStageSchema } from "@/lib/validators";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -114,4 +114,76 @@ export async function deleteEvent(id: string) {
   });
   revalidatePath("/events");
   redirect("/events");
+}
+
+export async function cloneEvent(eventId: string) {
+  const user = await requireRole("admin", "manager", "coordinator");
+
+  const [original] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.id, eventId), eq(events.orgId, user.orgId)))
+    .limit(1);
+  if (!original) throw new Error("Event not found");
+
+  const [originalTasks, originalRunSheet] = await Promise.all([
+    db.select().from(tasks).where(eq(tasks.eventId, eventId)),
+    db.select().from(runSheetItems).where(eq(runSheetItems.eventId, eventId)),
+  ]);
+
+  const [newEvent] = await db
+    .insert(events)
+    .values({
+      orgId: user.orgId,
+      clientId: original.clientId,
+      name: `Copy of ${original.name}`,
+      type: original.type,
+      stage: "inquiry",
+      eventDate: null,
+      venue: original.venue,
+      venueAddress: original.venueAddress,
+      guestCount: original.guestCount,
+      budget: original.budget,
+      notes: original.notes,
+      assignedTo: user.id,
+    })
+    .returning();
+
+  if (originalTasks.length > 0) {
+    await db.insert(tasks).values(
+      originalTasks.map((t) => ({
+        orgId: user.orgId,
+        eventId: newEvent.id,
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        status: "todo" as const,
+        createdBy: user.id,
+      }))
+    );
+  }
+
+  if (originalRunSheet.length > 0) {
+    await db.insert(runSheetItems).values(
+      originalRunSheet.map((r) => ({
+        eventId: newEvent.id,
+        time: r.time,
+        title: r.title,
+        description: r.description,
+        sortOrder: r.sortOrder,
+      }))
+    );
+  }
+
+  await logAudit({
+    orgId: user.orgId,
+    actor: user.id,
+    action: "event.cloned",
+    entityType: "event",
+    entityId: newEvent.id,
+    summary: `Cloned from "${original.name}"`,
+  });
+
+  revalidatePath("/events");
+  redirect(`/events/${newEvent.id}`);
 }
