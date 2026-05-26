@@ -362,6 +362,29 @@ export const auditLogs = pgTable("audit_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const staffRoleEnum = pgEnum("staff_role", ["coordinator", "host", "technician", "photographer", "security", "waitstaff", "other"]);
+
+export const eventStaff = pgTable("event_staff", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").notNull().references(() => organisations.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  role: staffRoleEnum("role").notNull().default("coordinator"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const npsResponses = pgTable("nps_responses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").notNull().references(() => organisations.id),
+  token: text("token").notNull().unique(),
+  score: integer("score"),
+  comment: text("comment"),
+  respondedAt: timestamp("responded_at", { withTimezone: true }),
+  sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const organisationsRelations = relations(organisations, ({ many }) => ({
@@ -427,3 +450,5 @@ export type ChecklistTemplateItem = typeof checklistTemplateItems.$inferSelect;
 export type EventChecklist = typeof eventChecklists.$inferSelect;
 export type EventChecklistItem = typeof eventChecklistItems.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type EventStaff = typeof eventStaff.$inferSelect;
+export type NpsResponse = typeof npsResponses.$inferSelect;

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, CalendarDays, ListTodo, Kanban,
   Star, Truck, ClipboardList, Sunset, BarChart3, ScrollText,
-  Building2, CheckSquare,
+  Building2, CheckSquare, TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ const nav: NavSection[] = [
       { id: "/checklists",     label: "Checklists",  icon: CheckSquare },
       { id: "/event-day",      label: "Event day",   icon: Sunset },
       { id: "/ops",            label: "Ops",         icon: BarChart3 },
+      { id: "/analytics",     label: "Analytics",   icon: TrendingUp },
     ],
   },
   {

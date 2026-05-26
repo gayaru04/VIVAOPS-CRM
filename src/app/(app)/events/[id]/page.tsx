@@ -4,6 +4,7 @@ import {
   events, clients, tasks, comms, quotes, files,
   workOrders, suppliers, runSheetItems,
   checklistTemplates, eventChecklists, eventChecklistItems,
+  eventStaff, npsResponses, users,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -17,10 +18,14 @@ import { createComm } from "@/server/actions/comms";
 import { createRunSheetItem } from "@/server/actions/run-sheet";
 import { deleteFile } from "@/server/actions/files";
 import { applyTemplateToEvent, toggleChecklistItem } from "@/server/actions/checklists";
+import { addEventStaff, removeEventStaff } from "@/server/actions/staff";
+import { updateQuoteStatus } from "@/server/actions/quotes";
 import { FileUploadForm } from "./file-upload-form";
+import { QuoteForm } from "./quote-form";
+import { AiRunsheetButton } from "./ai-runsheet-button";
 import { getSignedUrl } from "@/lib/storage";
 import Link from "next/link";
-import { CalendarDays, MapPin, Users, DollarSign, Plus, Copy, Download, Trash2, CheckSquare, Square } from "lucide-react";
+import { CalendarDays, MapPin, Users, DollarSign, Plus, Copy, Download, Trash2, CheckSquare, Square, UserPlus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectInput } from "@/components/ui/select-input";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -41,10 +46,10 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
   const { event, client } = row;
 
-  const [eventTasks, eventComms, eventQuotes, rawFiles, eventWOs, eventRunSheet, eventChecklistsRaw, allTemplates] = await Promise.all([
+  const [eventTasks, eventComms, eventQuotes, rawFiles, eventWOs, eventRunSheet, eventChecklistsRaw, allTemplates, staffRows, npsRow, orgUsers] = await Promise.all([
     db.select().from(tasks).where(eq(tasks.eventId, event.id)),
     db.select().from(comms).where(eq(comms.eventId, event.id)).orderBy(comms.sentAt),
-    db.select().from(quotes).where(eq(quotes.eventId, event.id)),
+    db.select().from(quotes).where(eq(quotes.eventId, event.id)).orderBy(quotes.createdAt),
     db.select().from(files).where(eq(files.eventId, event.id)).orderBy(files.createdAt),
     db.select({ wo: workOrders, supplier: suppliers })
       .from(workOrders)
@@ -53,6 +58,12 @@ export default async function EventDetailPage({ params }: { params: { id: string
     db.select().from(runSheetItems).where(eq(runSheetItems.eventId, event.id)).orderBy(runSheetItems.time),
     db.select().from(eventChecklists).where(eq(eventChecklists.eventId, event.id)),
     db.select().from(checklistTemplates).where(eq(checklistTemplates.orgId, user.orgId)),
+    db.select({ staff: eventStaff, member: users })
+      .from(eventStaff)
+      .leftJoin(users, eq(eventStaff.userId, users.id))
+      .where(eq(eventStaff.eventId, event.id)),
+    db.select().from(npsResponses).where(eq(npsResponses.eventId, event.id)).limit(1),
+    db.select().from(users).where(eq(users.orgId, user.orgId)),
   ]);
 
   // Attach signed URLs to files
@@ -80,6 +91,18 @@ export default async function EventDetailPage({ params }: { params: { id: string
   );
 
   const totalChecklistItems = eventChecklists2.reduce((s, cl) => s + cl.items.length, 0);
+
+  // Budget vs actual
+  const totalSpend = eventWOs.reduce((s, { wo }) => s + Number(wo.amount ?? 0), 0);
+  const budget = Number(event.budget ?? 0);
+  const budgetVariance = budget - totalSpend;
+
+  // NPS
+  const nps = npsRow[0] ?? null;
+
+  // Staff not yet assigned (for dropdown)
+  const assignedUserIds = new Set(staffRows.map((r) => r.staff.userId));
+  const unassignedUsers = orgUsers.filter((u) => !assignedUserIds.has(u.id));
 
   const daysToGo = event.eventDate
     ? Math.ceil((new Date(event.eventDate).getTime() - Date.now()) / 86_400_000)
@@ -183,6 +206,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             ["checklists",  `Checklists (${totalChecklistItems})`],
             ["workorders",  `Work Orders (${eventWOs.length})`],
             ["runsheet",    `Run Sheet (${eventRunSheet.length})`],
+            ["staff",       `Staff (${staffRows.length})`],
           ].map(([value, label]) => (
             <TabsTrigger
               key={value}
@@ -212,12 +236,53 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     </div>
                   ))}
                 </div>
-                {event.notes && (
-                  <div className="bg-surface border border-border rounded-lg p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-2">Notes</p>
-                    <p className="text-[13px] text-foreground whitespace-pre-wrap">{event.notes}</p>
-                  </div>
-                )}
+
+                <div className="flex flex-col gap-5">
+                  {event.notes && (
+                    <div className="bg-surface border border-border rounded-lg p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-2">Notes</p>
+                      <p className="text-[13px] text-foreground whitespace-pre-wrap">{event.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Budget vs Actual */}
+                  {budget > 0 && (
+                    <div className="bg-surface border border-border rounded-lg overflow-hidden">
+                      <div className="px-4 py-2.5 border-b border-border">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3">Budget vs Actual</p>
+                      </div>
+                      {[
+                        ["Budget",   fmtMoney(event.budget)],
+                        ["WO Spend", fmtMoney(totalSpend.toString())],
+                        ["Variance", fmtMoney(Math.abs(budgetVariance).toString())],
+                      ].map(([label, value], i) => (
+                        <div key={label as string} className={`grid grid-cols-[100px_1fr] gap-3 px-4 py-2.5 text-[13px] ${i !== 0 ? "border-t border-border" : ""}`}>
+                          <span className="text-text-3">{label}</span>
+                          <span className={`font-medium tabular-nums ${label === "Variance" ? (budgetVariance >= 0 ? "text-green-500" : "text-red-500") : "text-foreground"}`}>
+                            {label === "Variance" ? (budgetVariance >= 0 ? "+" : "-") : ""}{value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* NPS score */}
+                  {nps && nps.score !== null && (
+                    <div className="bg-surface border border-border rounded-lg p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-2">Client Satisfaction</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[32px] font-semibold tabular-nums text-foreground leading-none">{nps.score}</span>
+                        <span className="text-[13px] text-text-3">/ 10</span>
+                        <div className="flex gap-1 ml-1">
+                          {[...Array(10)].map((_, i) => (
+                            <div key={i} className={`h-2 w-2 rounded-full ${i < (nps.score ?? 0) ? "bg-primary" : "bg-surface-3"}`} />
+                          ))}
+                        </div>
+                      </div>
+                      {nps.comment && <p className="text-[12px] text-text-3 mt-2 italic">"{nps.comment}"</p>}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Reminders */}
@@ -356,18 +421,46 @@ export default async function EventDetailPage({ params }: { params: { id: string
           </TabsContent>
 
           <TabsContent value="quotes">
-            <div className="flex flex-col gap-2 max-w-2xl">
-              {eventQuotes.length === 0
-                ? <p className="text-[13px] text-text-3">No quotes yet.</p>
-                : eventQuotes.map((q) => (
-                  <div key={q.id} className="flex items-center justify-between bg-surface border border-border rounded-lg px-4 py-3">
+            <div className="flex flex-col gap-5 max-w-3xl">
+              {/* Existing quotes */}
+              {eventQuotes.map((q) => (
+                <div key={q.id} className="bg-surface border border-border rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                     <div>
-                      <p className="text-[13px] font-medium tabular-nums text-foreground">{q.number}</p>
-                      <p className="text-[11.5px] text-text-3 tabular-nums">{fmtMoney(q.total)}</p>
+                      <p className="text-[13px] font-semibold text-foreground tabular-nums">{q.number}</p>
+                      <p className="text-[11.5px] text-text-3 mt-0.5">
+                        Total: <span className="font-medium text-foreground">{fmtMoney(q.total)}</span>
+                        {q.validUntil ? ` · Valid until ${fmtDate(q.validUntil)}` : ""}
+                      </p>
                     </div>
-                    <StatusBadge status={q.status} />
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={q.status} />
+                      {(["draft","sent","accepted","rejected","expired"] as const).map((s) => s !== q.status && (
+                        <form key={s} action={updateQuoteStatus.bind(null, q.id, s)}>
+                          <SubmitButton variant="outline" size="sm" className="h-6 px-2 text-[11px] capitalize">{s}</SubmitButton>
+                        </form>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                  {q.notes && <p className="px-4 py-2.5 text-[12px] text-text-3 border-b border-border">{q.notes}</p>}
+                  <div className="divide-y divide-border">
+                    {((q.lineItems as Array<{description:string;qty:number;rate:number;amount:number}>) ?? []).map((li, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_60px_90px_90px] gap-3 px-4 py-2.5 text-[13px]">
+                        <span className="text-foreground">{li.description}</span>
+                        <span className="text-text-3 text-right tabular-nums">{li.qty}</span>
+                        <span className="text-text-3 text-right tabular-nums">{fmtMoney(li.rate.toString())}</span>
+                        <span className="text-foreground text-right tabular-nums font-medium">{fmtMoney(li.amount.toString())}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* New quote form */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-3">New Quote</p>
+                <QuoteForm eventId={event.id} />
+              </div>
             </div>
           </TabsContent>
 
@@ -490,6 +583,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
           <TabsContent value="runsheet">
             <div className="flex flex-col gap-3 max-w-2xl">
+              {/* AI generator */}
+              <AiRunsheetButton eventId={event.id} existingCount={eventRunSheet.length} />
+
               {/* Add item form */}
               <form action={createRunSheetItem} className="bg-surface border border-border rounded-lg p-4 flex flex-col gap-3">
                 <input type="hidden" name="eventId" value={event.id} />
@@ -538,6 +634,84 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     </div>
                   ))}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* ── Staff ── */}
+          <TabsContent value="staff">
+            <div className="flex flex-col gap-4 max-w-2xl">
+              {/* Current staff */}
+              <div className="border border-border rounded-lg overflow-hidden bg-surface">
+                {staffRows.length === 0 ? (
+                  <p className="text-[13px] text-text-3 px-4 py-4">No staff assigned yet.</p>
+                ) : (
+                  staffRows.map(({ staff, member }, i) => (
+                    <div key={staff.id} className={`flex items-center gap-3 px-4 py-3 text-[13px] ${i !== 0 ? "border-t border-border" : ""}`}>
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10.5px] font-semibold flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg, hsl(252 60% 55%), hsl(312 70% 60%))" }}
+                      >
+                        {(member?.name ?? "?").split(" ").slice(0, 2).map((s) => s[0]).join("").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">{member?.name ?? "Unknown"}</p>
+                        <p className="text-[11.5px] text-text-3 capitalize">{staff.role}{staff.notes ? ` · ${staff.notes}` : ""}</p>
+                      </div>
+                      <form action={removeEventStaff.bind(null, staff.id, event.id)}>
+                        <button type="submit" className="text-text-3 hover:text-destructive transition-colors p-1 rounded">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </form>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Assign staff form */}
+              {unassignedUsers.length > 0 && (
+                <form action={addEventStaff} className="border border-border rounded-lg p-4 bg-surface flex flex-col gap-3">
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <input type="hidden" name="orgId" value={event.orgId} />
+                  <p className="text-[13px] font-medium text-foreground flex items-center gap-2">
+                    <UserPlus className="h-3.5 w-3.5 text-primary" /> Assign team member
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-text-3">Team member *</label>
+                      <SelectInput name="userId" required>
+                        <option value="">Select person…</option>
+                        {unassignedUsers.map((u) => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                      </SelectInput>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-text-3">Role *</label>
+                      <SelectInput name="role" required>
+                        <option value="">Select role…</option>
+                        {["coordinator", "host", "technician", "photographer", "security", "waitstaff", "other"].map((r) => (
+                          <option key={r} value={r} className="capitalize">{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                        ))}
+                      </SelectInput>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-medium text-text-3">Notes (optional)</label>
+                    <input
+                      name="notes"
+                      placeholder="e.g. Arrive by 3pm, bring own equipment"
+                      className="flex h-9 w-full rounded-md border border-border bg-surface px-3 py-1 text-[13px] text-foreground placeholder:text-text-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
+                  <div>
+                    <SubmitButton size="sm">Assign</SubmitButton>
+                  </div>
+                </form>
+              )}
+
+              {unassignedUsers.length === 0 && staffRows.length > 0 && (
+                <p className="text-[12px] text-text-3 text-center py-1">All team members assigned to this event.</p>
+              )}
             </div>
           </TabsContent>
         </div>

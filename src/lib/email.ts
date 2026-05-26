@@ -96,3 +96,22 @@ export function customEmail(data: {
     ${data.body.split("\n").map((line) => `<p>${line}</p>`).join("")}
   `);
 }
+
+export function npsEmail(data: {
+  clientName: string;
+  eventName: string;
+  surveyUrl: string;
+}) {
+  return wrap(`
+    <div class="badge">How did we do?</div>
+    <h1 style="margin-top:14px">Thanks for choosing us, ${data.clientName}!</h1>
+    <p>We hope <strong>${data.eventName}</strong> was everything you imagined. Your feedback helps us improve for every event we deliver.</p>
+    <p>It only takes 30 seconds — click below to rate your experience:</p>
+    <p style="text-align:center;margin:28px 0">
+      <a href="${data.surveyUrl}" style="display:inline-block;background:#6d4ed8;color:#fff;text-decoration:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:600">
+        Rate your experience →
+      </a>
+    </p>
+    <p>Thank you — we truly value your feedback.</p>
+  `);
+}
