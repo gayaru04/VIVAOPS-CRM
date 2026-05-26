@@ -52,7 +52,8 @@ export default async function OpsPage() {
     <div>
       <PageHeader title="Ops Dashboard" sub="Manager view — next 14 days" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <div className="px-7 pt-6 pb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start max-w-5xl">
 
         {/* Upcoming Events */}
         <section className="flex flex-col">
@@ -142,6 +143,7 @@ export default async function OpsPage() {
           </div>
         </section>
 
+      </div>
       </div>
     </div>
   );
