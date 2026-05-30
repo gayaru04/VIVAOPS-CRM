@@ -435,6 +435,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     </div>
                     <div className="flex items-center gap-2">
                       <StatusBadge status={q.status} />
+                      <Button asChild variant="outline" size="sm" className="h-6 px-2 text-[11px]">
+                        <a href={`/api/quotes/${q.id}/pdf`} download>
+                          <Download className="h-3 w-3" /> PDF
+                        </a>
+                      </Button>
                       {(["draft","sent","accepted","rejected","expired"] as const).map((s) => s !== q.status && (
                         <form key={s} action={updateQuoteStatus.bind(null, q.id, s)}>
                           <SubmitButton variant="outline" size="sm" className="h-6 px-2 text-[11px] capitalize">{s}</SubmitButton>
@@ -448,8 +453,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
                       <div key={i} className="grid grid-cols-[1fr_60px_90px_90px] gap-3 px-4 py-2.5 text-[13px]">
                         <span className="text-foreground">{li.description}</span>
                         <span className="text-text-3 text-right tabular-nums">{li.qty}</span>
-                        <span className="text-text-3 text-right tabular-nums">{fmtMoney(li.rate.toString())}</span>
-                        <span className="text-foreground text-right tabular-nums font-medium">{fmtMoney(li.amount.toString())}</span>
+                        <span className="text-text-3 text-right tabular-nums">{fmtMoney(String(li.rate ?? 0))}</span>
+                        <span className="text-foreground text-right tabular-nums font-medium">{fmtMoney(String(li.amount ?? 0))}</span>
                       </div>
                     ))}
                   </div>

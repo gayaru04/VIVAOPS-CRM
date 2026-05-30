@@ -1,6 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM_EMAIL ?? "VivaOPS <noreply@vivaops.app>";
 
 export interface EmailPayload {
@@ -14,6 +13,7 @@ export async function sendEmail(payload: EmailPayload) {
     console.warn("[email] RESEND_API_KEY not set — email skipped");
     return { id: null, skipped: true };
   }
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
     from: FROM,
     to: payload.to,
