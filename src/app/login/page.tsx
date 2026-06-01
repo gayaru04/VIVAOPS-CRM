@@ -1,121 +1,168 @@
 "use client";
-import { useState, useTransition } from "react";
-import { createClient } from "@/lib/supabase/client";
+
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { motion } from "motion/react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-const DEMO_EMAIL = "demo@vivamelbourne.com.au";
-const DEMO_PASSWORD = "vivaops2024";
+const formSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  rememberMe: z.boolean().default(false).optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants = {
+  hidden: { y: 16, opacity: 0 },
+  visible: { y: 0, opacity: 1 },
+};
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
 
-  function handleDemoFill() {
-    setMode("signin");
-    setEmail(DEMO_EMAIL);
-    setPassword(DEMO_PASSWORD);
-  }
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { email: "", password: "", rememberMe: false },
+  });
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    startTransition(async () => {
+  async function onSubmit(data: FormValues) {
+    setIsLoading(true);
+    try {
       const supabase = createClient();
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { name } } });
-        if (error) { toast.error(error.message); return; }
-        toast.success("Account created — you can now sign in.");
-        setMode("signin");
-        return;
-      }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
       if (error) { toast.error(error.message); return; }
       router.push("/dashboard");
       router.refresh();
-    });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function fillDemo() {
+    form.setValue("email", "demo@vivamelbourne.com.au");
+    form.setValue("password", "vivaops2024");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-[360px]">
-        {/* Card */}
-        <div className="bg-surface border border-border rounded-xl shadow-pop px-8 py-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-7">
-            <div
-              className="w-8 h-8 rounded-[7px] flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-              style={{
-                background: "radial-gradient(120% 120% at 0% 0%, hsl(252 78% 72%) 0%, hsl(252 78% 60%) 55%, hsl(252 70% 45%) 100%)",
-                boxShadow: "inset 0 1px 0 hsl(252 100% 85% / 0.6)",
-              }}
-            >
-              V
-            </div>
-            <div>
-              <div className="text-[14px] font-semibold tracking-tight text-foreground leading-none">VivaOps</div>
-              <div className="text-[11px] text-text-3 mt-0.5">
-                {mode === "signin" ? "Sign in to continue" : "Create your account"}
-              </div>
-            </div>
-          </div>
+    <div className="relative flex min-h-screen w-full flex-col md:flex-row">
+      {/* Left panel — form */}
+      <div className="flex w-full flex-col items-center justify-center bg-background p-8 md:w-1/2">
+        <div className="w-full max-w-md">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
 
-          {/* Mode toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden mb-5 p-0.5 bg-surface-2 gap-0.5">
-            {(["signin", "signup"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`flex-1 py-1.5 text-[12.5px] font-medium rounded-md transition-all ${
-                  mode === m
-                    ? "bg-surface text-foreground shadow-soft"
-                    : "text-text-3 hover:text-text-2"
-                }`}
+            {/* Logo */}
+            <motion.div variants={itemVariants} className="flex items-center gap-2.5">
+              <div
+                className="w-9 h-9 rounded-[8px] flex items-center justify-center text-white text-[15px] font-bold flex-shrink-0"
+                style={{
+                  background: "radial-gradient(120% 120% at 0% 0%, hsl(252 78% 72%) 0%, hsl(252 78% 60%) 55%, hsl(252 70% 45%) 100%)",
+                  boxShadow: "inset 0 1px 0 hsl(252 100% 85% / 0.6), 0 1px 3px rgba(0,0,0,0.15)",
+                }}
               >
-                {m === "signin" ? "Sign in" : "Create account"}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-            {mode === "signup" && (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Smith" required />
+                V
               </div>
-            )}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "signup" ? "Min 6 characters" : ""} required />
-            </div>
-            <Button type="submit" className="w-full mt-1" disabled={isPending}>
-              {isPending
-                ? mode === "signin" ? "Signing in…" : "Creating account…"
-                : mode === "signin" ? "Sign in" : "Create account"}
-            </Button>
-          </form>
+              <div>
+                <div className="text-[15px] font-semibold tracking-tight text-foreground leading-none">VivaOps</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">Event Management · Melbourne</div>
+              </div>
+            </motion.div>
 
-          {mode === "signin" && (
-            <button
-              onClick={handleDemoFill}
-              className="mt-4 w-full text-[11.5px] text-text-3 hover:text-foreground transition-colors underline underline-offset-4"
-            >
-              Use demo credentials
-            </button>
-          )}
+            {/* Heading */}
+            <motion.div variants={itemVariants}>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to your account to continue</p>
+            </motion.div>
+
+            {/* Form */}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <motion.div variants={itemVariants}>
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="you@example.com" disabled={isLoading} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                  <FormField control={form.control} name="password" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" disabled={isLoading} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="flex items-center justify-between">
+                  <FormField control={form.control} name="rememberMe" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isLoading} />
+                      </FormControl>
+                      <FormLabel className="font-normal text-sm cursor-pointer">Remember me</FormLabel>
+                    </FormItem>
+                  )} />
+                  <button type="button" onClick={fillDemo} className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
+                    Use demo login
+                  </button>
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign in
+                  </Button>
+                </motion.div>
+              </form>
+            </Form>
+
+            <motion.p variants={itemVariants} className="text-center text-xs text-muted-foreground">
+              VivaOps · Internal use only
+            </motion.p>
+          </motion.div>
         </div>
-        <p className="text-center text-[11px] text-text-4 mt-4">Viva Melbourne · Internal use only</p>
+      </div>
+
+      {/* Right panel — image */}
+      <div className="relative hidden md:block md:w-1/2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80"
+          alt="Elegant event venue with beautiful lighting"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        <div className="absolute bottom-10 left-10 right-10">
+          <p className="text-white text-xl font-semibold leading-snug drop-shadow">
+            Every detail, perfectly managed.
+          </p>
+          <p className="text-white/70 text-sm mt-1 drop-shadow">
+            Melbourne&apos;s premier event operations platform.
+          </p>
+        </div>
       </div>
     </div>
   );
