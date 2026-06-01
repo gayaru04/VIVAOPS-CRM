@@ -286,7 +286,7 @@ export function Topbar({ user }: TopbarProps) {
             {/* Results */}
             <div className="max-h-72 overflow-y-auto py-1.5">
               {filtered.length === 0 ? (
-                <p className="px-3.5 py-3 text-[13px] text-text-3">No results for "{query}"</p>
+                <p className="px-3.5 py-3 text-[13px] text-text-3">No results for &ldquo;{query}&rdquo;</p>
               ) : (
                 sections.map((s) => (
                   <div key={s.title}>

@@ -68,20 +68,17 @@ export async function sendEventReminder(formData: FormData) {
     smsBody = customBody;
   }
 
-  let sent = false;
   let skipped = false;
   let note = "";
 
   if (channel === "email") {
     if (!client.email) throw new Error("Client has no email address on file");
     const result = await sendEmail({ to: client.email, subject, html: emailHtml });
-    sent = !result.skipped;
     skipped = result.skipped;
     note = skipped ? "Email skipped — RESEND_API_KEY not configured" : `Email sent to ${client.email}`;
   } else {
     if (!client.phone) throw new Error("Client has no phone number on file");
     const result = await sendSms({ to: client.phone, body: smsBody });
-    sent = !result.skipped;
     skipped = result.skipped;
     note = skipped ? "SMS skipped — Twilio not configured" : `SMS sent to ${client.phone}`;
   }

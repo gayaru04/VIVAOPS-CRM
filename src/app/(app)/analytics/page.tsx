@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { leads, events, quotes } from "@/lib/db/schema";
-import { eq, and, count, sum } from "drizzle-orm";
+import { eq, sum } from "drizzle-orm";
 import { PageHeader } from "@/components/page-header";
 import { fmtMoney } from "@/lib/utils";
 

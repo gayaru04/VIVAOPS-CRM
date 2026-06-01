@@ -279,7 +279,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                           ))}
                         </div>
                       </div>
-                      {nps.comment && <p className="text-[12px] text-text-3 mt-2 italic">"{nps.comment}"</p>}
+                      {nps.comment && <p className="text-[12px] text-text-3 mt-2 italic">&ldquo;{nps.comment}&rdquo;</p>}
                     </div>
                   )}
                 </div>

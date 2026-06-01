@@ -31,7 +31,7 @@ export default async function SurveyPage({ params }: { params: { token: string }
         <div className="mb-6 text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-text-3 mb-1">Post-Event Feedback</p>
           <h1 className="text-[22px] font-semibold text-foreground">{response.event?.name ?? "Your Event"}</h1>
-          <p className="text-[14px] text-text-3 mt-1">We'd love to know how your event went.</p>
+          <p className="text-[14px] text-text-3 mt-1">We&apos;d love to know how your event went.</p>
         </div>
         <NpsSurveyForm token={params.token} />
       </div>

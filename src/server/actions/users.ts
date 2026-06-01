@@ -13,7 +13,7 @@ export async function inviteUser(formData: FormData) {
 
   // NOTE: Supabase service role needed for admin operations.
   // Wire supabaseAdmin.auth.admin.createUser when SERVICE_ROLE_KEY is set.
-  const tempPassword = `Viva${Math.random().toString(36).slice(2, 10)}!`;
+  // tempPassword would be used with supabase admin auth.createUser
 
   // Placeholder: in production, use supabase admin client to create the auth user
   // then insert the profile row below

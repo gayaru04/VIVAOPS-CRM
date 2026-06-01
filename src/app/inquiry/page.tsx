@@ -49,7 +49,7 @@ export default function InquiryPage() {
       <div className="max-w-lg w-full">
         <div className="mb-6 text-center">
           <h1 className="text-[24px] font-semibold text-foreground">Event Enquiry</h1>
-          <p className="text-[14px] text-text-3 mt-1">Tell us about your event and we'll get back to you shortly.</p>
+          <p className="text-[14px] text-text-3 mt-1">Tell us about your event and we&apos;ll get back to you shortly.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4">

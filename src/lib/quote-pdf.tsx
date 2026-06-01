@@ -1,11 +1,11 @@
-import { Document, Page, Text, View, StyleSheet, Line, Svg } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 const purple = "#6d4ed8";
 const black = "#111111";
 const gray1 = "#444444";
 const gray2 = "#888888";
 const gray3 = "#d4d4d4";
-const gray4 = "#f7f7f7";
+// gray4 reserved for future use
 const white = "#ffffff";
 
 const s = StyleSheet.create({

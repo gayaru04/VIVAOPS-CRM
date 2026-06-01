@@ -4,8 +4,6 @@ dotenv.config({ path: ".env.local" });
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
-import { eq } from "drizzle-orm";
-
 const client = postgres(process.env.DATABASE_URL!, { max: 1 });
 const db = drizzle(client, { schema });
 
@@ -188,7 +186,7 @@ async function seed() {
   ]);
 
   // Work orders
-  const [woFlorist] = await db.insert(schema.workOrders).values({
+  await db.insert(schema.workOrders).values({
     orgId: org.id,
     eventId: hartleyWedding.id,
     supplierId: florist.id,
@@ -277,7 +275,7 @@ async function seed() {
   });
 
   // Second event — corporate
-  const [apexEvent] = await db.insert(schema.events).values({
+  const [apexEvent] = await db.insert(schema.events).values({ // eslint-disable-line @typescript-eslint/no-unused-vars
     orgId: org.id,
     clientId: corporateClient.id,
     name: "Apex Q3 Leadership Summit",

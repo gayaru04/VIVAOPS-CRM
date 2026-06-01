@@ -60,7 +60,7 @@ export async function addTemplateItem(formData: FormData) {
 }
 
 export async function deleteTemplateItem(itemId: string, templateId: string) {
-  const user = await requireRole("admin", "manager");
+  await requireRole("admin", "manager");
   await db.delete(checklistTemplateItems).where(eq(checklistTemplateItems.id, itemId));
   revalidatePath(`/checklists/${templateId}`);
 }
@@ -92,7 +92,7 @@ export async function applyTemplateToEvent(formData: FormData) {
 // ─── Toggle checklist item ────────────────────────────────────────────────────
 
 export async function toggleChecklistItem(itemId: string, eventId: string, currentStatus: string) {
-  const user = await requireRole("admin", "manager", "coordinator");
+  await requireRole("admin", "manager", "coordinator");
   const newStatus = currentStatus === "done" ? "pending" : "done";
 
   await db.update(eventChecklistItems)
