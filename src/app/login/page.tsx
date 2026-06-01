@@ -150,16 +150,16 @@ export default function LoginPage() {
       <div className="relative hidden md:block md:w-1/2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80"
-          alt="Elegant event venue with beautiful lighting"
+          src="/login-bg.png"
+          alt="VivaOps login background"
           className="h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <div className="absolute bottom-10 left-10 right-10">
-          <p className="text-white text-xl font-semibold leading-snug drop-shadow">
+          <p className="text-white text-xl font-semibold leading-snug drop-shadow-lg">
             Every detail, perfectly managed.
           </p>
-          <p className="text-white/70 text-sm mt-1 drop-shadow">
+          <p className="text-white/60 text-sm mt-1">
             Melbourne&apos;s premier event operations platform.
           </p>
         </div>
