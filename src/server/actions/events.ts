@@ -1,9 +1,10 @@
 "use server";
 import { db } from "@/lib/db";
-import { events, eventStageHistory, tasks, runSheetItems } from "@/lib/db/schema";
+import { events, eventStageHistory, tasks, runSheetItems, clients, comms } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { createEventSchema, updateEventStageSchema } from "@/lib/validators";
+import { sendEmail, eventConfirmationEmail } from "@/lib/email";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -70,6 +71,34 @@ export async function updateEventStage(formData: FormData) {
     entityId: data.eventId,
     summary: `Stage changed: ${current.stage} → ${data.stage}`,
   });
+
+  // Auto-send confirmation email when stage moves to "confirmed"
+  if (data.stage === "confirmed" && current.stage !== "confirmed" && current.clientId) {
+    const [client] = await db.select().from(clients).where(eq(clients.id, current.clientId)).limit(1);
+    if (client?.email) {
+      const fmtDate = (d: string | null) =>
+        d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
+      const subject = `Your event is confirmed – ${current.name}`;
+      const html = eventConfirmationEmail({
+        clientName: client.name,
+        eventName: current.name,
+        eventDate: fmtDate(current.eventDate),
+        venue: current.venue,
+        guestCount: current.guestCount,
+      });
+      const result = await sendEmail({ to: client.email, subject, html });
+      await db.insert(comms).values({
+        orgId: user.orgId,
+        type: "email",
+        direction: "outbound",
+        subject,
+        body: `Auto-confirmation email sent to ${client.email}${result.skipped ? " (skipped — RESEND_API_KEY not set)" : ""}`,
+        eventId: data.eventId,
+        clientId: client.id,
+        sentBy: user.id,
+      });
+    }
+  }
 
   revalidatePath(`/events/${data.eventId}`);
   revalidatePath("/events");
