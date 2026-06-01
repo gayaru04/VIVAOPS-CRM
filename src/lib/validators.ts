@@ -75,9 +75,9 @@ export const createQuoteSchema = z.object({
   notes: z.string().optional(),
   lineItems: z.array(z.object({
     description: z.string(),
-    quantity: z.number(),
-    unitPrice: z.string(),
-    amount: z.string(),
+    qty: z.number(),
+    rate: z.number(),
+    amount: z.number(),
   })).default([]),
 });
 

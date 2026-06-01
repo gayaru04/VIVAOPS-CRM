@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -35,16 +38,19 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any;
 
-  const buffer = await renderToBuffer(element);
+  try {
+    const buffer = await renderToBuffer(element);
+    const arrayBuffer = new ArrayBuffer(buffer.length);
+    new Uint8Array(arrayBuffer).set(buffer);
 
-  // Copy into a plain ArrayBuffer so TypeScript accepts it as BodyInit
-  const arrayBuffer = new ArrayBuffer(buffer.length);
-  new Uint8Array(arrayBuffer).set(buffer);
-
-  return new Response(arrayBuffer, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="quote-${row.quote.number}.pdf"`,
-    },
-  });
+    return new Response(arrayBuffer, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="quote-${row.quote.number}.pdf"`,
+      },
+    });
+  } catch (err) {
+    console.error("[PDF] renderToBuffer failed:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
