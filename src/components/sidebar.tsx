@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, CalendarDays, ListTodo, Kanban,
   Star, Truck, ClipboardList, Sunset, BarChart3, ScrollText,
-  Building2, CheckSquare, TrendingUp,
+  Building2, CheckSquare, TrendingUp, Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -112,7 +112,10 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
 
       {/* User footer */}
       {userName && (
-        <div className="border-t border-border px-2 py-2 flex items-center gap-2 flex-shrink-0">
+        <Link
+          href="/account"
+          className="border-t border-border px-2 py-2 flex items-center gap-2 flex-shrink-0 hover:bg-hover transition-colors group"
+        >
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10.5px] font-semibold flex-shrink-0"
             style={{ background: "linear-gradient(135deg, hsl(252 60% 55%), hsl(312 70% 60%))" }}
@@ -123,7 +126,8 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
             <div className="text-[12.5px] leading-tight font-medium truncate text-foreground">{userName}</div>
             <div className="text-[11px] text-text-3 leading-tight capitalize">{userRole}</div>
           </div>
-        </div>
+          <Settings className="h-3.5 w-3.5 text-text-4 group-hover:text-text-2 transition-colors flex-shrink-0" />
+        </Link>
       )}
     </aside>
   );
