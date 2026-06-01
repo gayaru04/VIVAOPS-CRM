@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ const itemVariants = {
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,6 +63,16 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col md:flex-row">
+      {/* Dark mode toggle — fixed top right */}
+      <button
+        type="button"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="fixed top-4 right-4 z-50 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-surface hover:bg-hover transition-colors shadow-sm"
+        aria-label="Toggle dark mode"
+      >
+        {theme === "dark" ? <Sun className="h-4 w-4 text-foreground" /> : <Moon className="h-4 w-4 text-foreground" />}
+      </button>
+
       {/* Left panel — form */}
       <div className="flex w-full flex-col items-center justify-center bg-background p-8 md:w-1/2">
         <div className="w-full max-w-md">
