@@ -2,11 +2,30 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const isPublic =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/inquiry") ||
+    pathname.startsWith("/survey") ||
+    pathname.startsWith("/api/inquiry") ||
+    pathname.startsWith("/api/survey") ||
+    pathname.startsWith("/forbidden") ||
+    pathname === "/";
+
+  // If Supabase env vars aren't set, allow public routes and block the rest
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (isPublic) return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -26,12 +45,6 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-  const isPublic = pathname.startsWith("/login") ||
-    pathname.startsWith("/api/inquiry") ||
-    pathname.startsWith("/forbidden") ||
-    pathname === "/";
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
