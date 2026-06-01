@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectInput } from "@/components/ui/select-input";
 import { createEvent } from "@/server/actions/events";
+import { ClientSelector } from "./client-selector";
 import Link from "next/link";
 
 export default async function NewEventPage() {
@@ -29,12 +30,7 @@ export default async function NewEventPage() {
               <Input id="name" name="name" required placeholder="Hartley Wedding" />
             </Field>
             <Field label="Client *" className="col-span-2">
-              <SelectInput name="clientId" id="clientId" required>
-                <option value="">— Select client —</option>
-                {clientList.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </SelectInput>
+              <ClientSelector clients={clientList.map((c) => ({ id: c.id, name: c.name }))} />
             </Field>
             <Field label="Type">
               <SelectInput name="type" id="type">
