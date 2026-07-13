@@ -1,13 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient as getAdmin } from "@/lib/supabase/admin";
 
 const BUCKET = "event-files";
-
-function getAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Supabase env vars not set (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)");
-  return createClient(url, key);
-}
 
 export async function uploadToStorage(path: string, file: File) {
   const bytes = await file.arrayBuffer();

@@ -4,6 +4,7 @@ import { users } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { inviteUserSchema } from "@/lib/validators";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -11,14 +12,16 @@ export async function inviteUser(formData: FormData) {
   const actor = await requireRole("admin");
   const data = inviteUserSchema.parse(Object.fromEntries(formData));
 
-  // NOTE: Supabase service role needed for admin operations.
-  // Wire supabaseAdmin.auth.admin.createUser when SERVICE_ROLE_KEY is set.
-  // tempPassword would be used with supabase admin auth.createUser
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const admin = createAdminClient();
+  const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(data.email, {
+    data: { name: data.name },
+    redirectTo: `${appUrl}/set-password`,
+  });
+  if (error) throw new Error(error.message);
 
-  // Placeholder: in production, use supabase admin client to create the auth user
-  // then insert the profile row below
   const [user] = await db.insert(users).values({
-    id: crypto.randomUUID(),
+    id: invited.user.id,
     orgId: actor.orgId,
     name: data.name,
     email: data.email,
