@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { leads, events, tasks } from "@/lib/db/schema";
-import { eq, and, count } from "drizzle-orm";
+import { leads, events, tasks, quotes } from "@/lib/db/schema";
+import { eq, and, count, gte, lt, desc, inArray, notInArray, sql } from "drizzle-orm";
 import { KpiCard } from "@/components/kpi";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -16,14 +16,44 @@ export default async function DashboardPage() {
   const dayOfWeek = today.toLocaleDateString("en-AU", { weekday: "long" });
   const dateStr = today.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
 
-  const [[leadCount], [activeEventCount], [openTaskCount], recentLeads, upcomingEvents] =
-    await Promise.all([
-      db.select({ count: count() }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.status, "new"))),
-      db.select({ count: count() }).from(events).where(eq(events.orgId, orgId)),
-      db.select({ count: count() }).from(tasks).where(and(eq(tasks.orgId, orgId), eq(tasks.status, "todo"))),
-      db.select().from(leads).where(eq(leads.orgId, orgId)).orderBy(leads.createdAt).limit(5),
-      db.select().from(events).where(eq(events.orgId, orgId)).orderBy(events.eventDate).limit(5),
-    ]);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  const twoWeeksAgo = new Date(today);
+  twoWeeksAgo.setDate(today.getDate() - 14);
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const [
+    [leadCount],
+    [leadsThisWeek],
+    [leadsPrevWeek],
+    [activeEventCount],
+    [eventsThisWeek],
+    [eventsPrevWeek],
+    [openTaskCount],
+    [revenueMtd],
+    recentLeads,
+    upcomingEvents,
+  ] = await Promise.all([
+    db.select({ count: count() }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.status, "new"))),
+    db.select({ count: count() }).from(leads).where(and(eq(leads.orgId, orgId), gte(leads.createdAt, weekAgo))),
+    db.select({ count: count() }).from(leads).where(and(eq(leads.orgId, orgId), gte(leads.createdAt, twoWeeksAgo), lt(leads.createdAt, weekAgo))),
+    db.select({ count: count() }).from(events).where(and(eq(events.orgId, orgId), notInArray(events.stage, ["completed", "cancelled"]))),
+    db.select({ count: count() }).from(events).where(and(eq(events.orgId, orgId), gte(events.createdAt, weekAgo))),
+    db.select({ count: count() }).from(events).where(and(eq(events.orgId, orgId), gte(events.createdAt, twoWeeksAgo), lt(events.createdAt, weekAgo))),
+    db.select({ count: count() }).from(tasks).where(and(eq(tasks.orgId, orgId), inArray(tasks.status, ["todo", "in_progress"]))),
+    db.select({ total: sql<string>`coalesce(sum(${quotes.total}), '0')` }).from(quotes).where(and(eq(quotes.orgId, orgId), eq(quotes.status, "accepted"), gte(quotes.updatedAt, monthStart))),
+    db.select().from(leads).where(eq(leads.orgId, orgId)).orderBy(desc(leads.createdAt)).limit(5),
+    db.select().from(events).where(and(eq(events.orgId, orgId), gte(events.eventDate, todayStr), notInArray(events.stage, ["cancelled"]))).orderBy(events.eventDate).limit(5),
+  ]);
+
+  const weekDelta = (thisWeek: number, prevWeek: number) =>
+    thisWeek === 0 && prevWeek === 0
+      ? {}
+      : {
+          delta: `+${thisWeek} this week`,
+          deltaUp: thisWeek > prevWeek ? true : thisWeek < prevWeek ? false : undefined,
+        };
 
   return (
     <>
@@ -38,10 +68,10 @@ export default async function DashboardPage() {
       <div className="px-7 pt-5 pb-16 flex flex-col gap-[18px]">
         {/* KPI row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <KpiCard label="New Leads"     value={leadCount?.count ?? 0}        delta="+3 this week" deltaUp />
-          <KpiCard label="Active Events" value={activeEventCount?.count ?? 0} delta="+1 this week" deltaUp />
+          <KpiCard label="New Leads"     value={leadCount?.count ?? 0}        {...weekDelta(leadsThisWeek?.count ?? 0, leadsPrevWeek?.count ?? 0)} />
+          <KpiCard label="Active Events" value={activeEventCount?.count ?? 0} {...weekDelta(eventsThisWeek?.count ?? 0, eventsPrevWeek?.count ?? 0)} />
           <KpiCard label="Open Tasks"    value={openTaskCount?.count ?? 0} />
-          <KpiCard label="Revenue (MTD)" value={fmtMoney("0")} />
+          <KpiCard label="Revenue (MTD)" value={fmtMoney(revenueMtd?.total ?? "0")} />
         </div>
 
         {/* Pipeline summary + needs attention */}

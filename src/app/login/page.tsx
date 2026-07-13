@@ -35,8 +35,11 @@ const itemVariants = {
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+
+  React.useEffect(() => setMounted(true), []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -66,11 +69,11 @@ export default function LoginPage() {
       {/* Dark mode toggle — fixed top right */}
       <button
         type="button"
-        onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
         className="fixed top-4 right-4 z-50 flex items-center justify-center w-9 h-9 rounded-full border border-border bg-surface hover:bg-hover transition-colors shadow-sm"
         aria-label="Toggle dark mode"
       >
-        {theme === "dark" ? <Sun className="h-4 w-4 text-foreground" /> : <Moon className="h-4 w-4 text-foreground" />}
+        {mounted && resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-foreground" /> : <Moon className="h-4 w-4 text-foreground" />}
       </button>
 
       {/* Left panel — form */}
