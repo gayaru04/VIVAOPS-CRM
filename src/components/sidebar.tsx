@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NavItem = { id: string; label: string; icon: React.ElementType; count?: number; dimmed?: boolean };
+type NavItem = { id: string; label: string; icon: React.ElementType; dimmed?: boolean };
 type NavSection = { group: string; items: NavItem[] };
 
 const nav: NavSection[] = [
@@ -16,19 +16,19 @@ const nav: NavSection[] = [
     group: "Workspace",
     items: [
       { id: "/dashboard",      label: "Dashboard",   icon: LayoutDashboard },
-      { id: "/pipeline",       label: "Pipeline",    icon: Kanban,        count: 36 },
-      { id: "/leads",          label: "Leads",       icon: Star,          count: 28 },
-      { id: "/clients",        label: "Clients",     icon: Building2,     count: 142 },
-      { id: "/events",         label: "Events",      icon: CalendarDays,  count: 19 },
-      { id: "/tasks",          label: "Tasks",       icon: ListTodo,      count: 11 },
+      { id: "/pipeline",       label: "Pipeline",    icon: Kanban },
+      { id: "/leads",          label: "Leads",       icon: Star },
+      { id: "/clients",        label: "Clients",     icon: Building2 },
+      { id: "/events",         label: "Events",      icon: CalendarDays },
+      { id: "/tasks",          label: "Tasks",       icon: ListTodo },
       { id: "/calendar",       label: "Calendar",    icon: CalendarDays },
     ],
   },
   {
     group: "Delivery",
     items: [
-      { id: "/suppliers",      label: "Suppliers",   icon: Truck,         count: 47 },
-      { id: "/work-orders",    label: "Work orders", icon: ClipboardList, count: 12 },
+      { id: "/suppliers",      label: "Suppliers",   icon: Truck },
+      { id: "/work-orders",    label: "Work orders", icon: ClipboardList },
       { id: "/checklists",     label: "Checklists",  icon: CheckSquare },
       { id: "/event-day",      label: "Event day",   icon: Sunset },
       { id: "/ops",            label: "Ops",         icon: BarChart3 },
@@ -47,9 +47,10 @@ const nav: NavSection[] = [
 interface SidebarProps {
   userName?: string;
   userRole?: string;
+  counts?: Record<string, number>;
 }
 
-export function Sidebar({ userName, userRole }: SidebarProps) {
+export function Sidebar({ userName, userRole, counts }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -95,12 +96,12 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
                 >
                   <Icon className={cn("h-[15px] w-[15px] flex-shrink-0", active ? "text-primary" : "text-text-3")} />
                   <span className="flex-1 min-w-0 truncate">{item.label}</span>
-                  {item.count != null && (
+                  {counts?.[item.id] != null && (
                     <span className={cn(
                       "text-[11px] tabular-nums rounded px-[6px] py-[1px]",
                       active ? "bg-surface-2 text-text-4" : "bg-surface-3 text-text-4"
                     )}>
-                      {item.count}
+                      {counts[item.id]}
                     </span>
                   )}
                 </Link>
