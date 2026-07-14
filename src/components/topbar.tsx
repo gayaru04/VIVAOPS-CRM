@@ -68,6 +68,31 @@ export function Topbar({ user }: TopbarProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  type RecordResult = { id: string; name: string };
+  const [recordResults, setRecordResults] = useState<{ leads: RecordResult[]; events: RecordResult[]; clients: RecordResult[] }>({
+    leads: [], events: [], clients: [],
+  });
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Search actual leads/events/clients as the user types (debounced)
+  useEffect(() => {
+    const q = query.trim();
+    if (!searchOpen || q.length < 2) {
+      setRecordResults({ leads: [], events: [], clients: [] });
+      return;
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (res.ok) setRecordResults(await res.json());
+      } catch {
+        // Palette still works for page navigation even if record search fails
+      }
+    }, 200);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [query, searchOpen]);
+
   // ⌘K / Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -96,15 +121,6 @@ export function Topbar({ user }: TopbarProps) {
     c.section.toLowerCase().includes(query.toLowerCase())
   );
 
-  function handleCommandKey(e: React.KeyboardEvent) {
-    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((v) => Math.min(v + 1, filtered.length - 1)); }
-    if (e.key === "ArrowUp")   { e.preventDefault(); setCursor((v) => Math.max(v - 1, 0)); }
-    if (e.key === "Enter" && filtered[cursor]) {
-      router.push(filtered[cursor].href);
-      setSearchOpen(false);
-    }
-  }
-
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -123,11 +139,29 @@ export function Topbar({ user }: TopbarProps) {
     ? `New ${routeLabels[segments[0]]?.replace(/s$/, "") ?? "record"}`
     : routeLabels[segments[segments.length - 1]] ?? "Detail";
 
-  // Group filtered results by section
-  const sections = ["Go to", "Create"].map((s) => ({
+  // Group filtered results by section, then append real record matches
+  const commandSections = ["Go to", "Create"].map((s) => ({
     title: s,
-    items: filtered.filter((c) => c.section === s),
+    items: filtered.filter((c) => c.section === s).map((c) => ({ label: c.label, href: c.href })),
   })).filter((s) => s.items.length > 0);
+
+  const recordSections = [
+    { title: "Leads", items: recordResults.leads.map((l) => ({ label: l.name, href: `/leads/${l.id}` })) },
+    { title: "Events", items: recordResults.events.map((e) => ({ label: e.name, href: `/events/${e.id}` })) },
+    { title: "Clients", items: recordResults.clients.map((c) => ({ label: c.name, href: `/clients/${c.id}` })) },
+  ].filter((s) => s.items.length > 0);
+
+  const allSections = [...commandSections, ...recordSections];
+  const flatItems = allSections.flatMap((s) => s.items);
+
+  function handleCommandKey(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((v) => Math.min(v + 1, flatItems.length - 1)); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setCursor((v) => Math.max(v - 1, 0)); }
+    if (e.key === "Enter" && flatItems[cursor]) {
+      router.push(flatItems[cursor].href);
+      setSearchOpen(false);
+    }
+  }
 
   let itemIndex = 0; // running index for cursor tracking across sections
 
@@ -285,10 +319,10 @@ export function Topbar({ user }: TopbarProps) {
 
             {/* Results */}
             <div className="max-h-72 overflow-y-auto py-1.5">
-              {filtered.length === 0 ? (
+              {flatItems.length === 0 ? (
                 <p className="px-3.5 py-3 text-[13px] text-text-3">No results for &ldquo;{query}&rdquo;</p>
               ) : (
-                sections.map((s) => (
+                allSections.map((s) => (
                   <div key={s.title}>
                     <p className="px-3.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-text-4">{s.title}</p>
                     {s.items.map((item) => {

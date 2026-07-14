@@ -153,6 +153,7 @@ export function FileUpload({ eventId, onUploaded }: FileUploadProps) {
             {/* Thumbnail / icon */}
             <div className="relative flex-shrink-0 mt-0.5">
               {file.preview && file.type.startsWith("image/") ? (
+                // eslint-disable-next-line @next/next/no-img-element -- local blob preview, not a remote/optimizable image
                 <img src={file.preview} alt={file.name} className="w-12 h-12 rounded-lg object-cover border border-border" />
               ) : file.preview && file.type.startsWith("video/") ? (
                 <video src={file.preview} className="w-12 h-12 rounded-lg object-cover border border-border" muted playsInline preload="metadata" />

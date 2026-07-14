@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { leads } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, or, ilike, gte, desc, asc, type SQL } from "drizzle-orm";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { FilterBar } from "@/components/filter-bar";
@@ -11,9 +11,30 @@ import { EmptyState } from "@/components/empty-state";
 import { fmtDate, fmtMoney } from "@/lib/utils";
 import { Plus, ChevronRight } from "lucide-react";
 
-export default async function LeadsPage() {
+const UPDATED_WINDOW_DAYS: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string; status?: string; source?: string; updated?: string; sort?: string };
+}) {
   const user = await requireUser();
-  const rows = await db.select().from(leads).where(eq(leads.orgId, user.orgId)).orderBy(desc(leads.createdAt));
+
+  const conditions: SQL[] = [eq(leads.orgId, user.orgId)];
+  if (searchParams.q) {
+    conditions.push(or(ilike(leads.name, `%${searchParams.q}%`), ilike(leads.email, `%${searchParams.q}%`))!);
+  }
+  if (searchParams.status) conditions.push(eq(leads.status, searchParams.status as typeof leads.status.enumValues[number]));
+  if (searchParams.source) conditions.push(eq(leads.source, searchParams.source as typeof leads.source.enumValues[number]));
+  const updatedDays = searchParams.updated ? UPDATED_WINDOW_DAYS[searchParams.updated] : undefined;
+  if (updatedDays) conditions.push(gte(leads.updatedAt, new Date(Date.now() - updatedDays * 86400000)));
+
+  const orderBy =
+    searchParams.sort === "oldest" ? asc(leads.updatedAt) :
+    searchParams.sort === "name" ? asc(leads.name) :
+    desc(leads.updatedAt);
+
+  const rows = await db.select().from(leads).where(and(...conditions)).orderBy(orderBy);
 
   return (
     <>
@@ -23,7 +44,37 @@ export default async function LeadsPage() {
         </Button>
       </PageHeader>
 
-      <FilterBar chips={["Stage: any", "Source: any", "Updated: 30d"]} />
+      <FilterBar
+        searchPlaceholder="Search leads by name or email…"
+        filters={[
+          { key: "status", label: "Status", options: [
+            { value: "new", label: "New" },
+            { value: "contacted", label: "Contacted" },
+            { value: "qualified", label: "Qualified" },
+            { value: "unqualified", label: "Unqualified" },
+            { value: "converted", label: "Converted" },
+          ] },
+          { key: "source", label: "Source", options: [
+            { value: "website", label: "Website" },
+            { value: "referral", label: "Referral" },
+            { value: "social", label: "Social" },
+            { value: "email", label: "Email" },
+            { value: "phone", label: "Phone" },
+            { value: "other", label: "Other" },
+          ] },
+          { key: "updated", label: "Updated", options: [
+            { value: "7d", label: "Last 7 days" },
+            { value: "30d", label: "Last 30 days" },
+            { value: "90d", label: "Last 90 days" },
+          ] },
+        ]}
+        sortOptions={[
+          { value: "newest", label: "Recently updated" },
+          { value: "oldest", label: "Oldest updated" },
+          { value: "name", label: "Name (A–Z)" },
+        ]}
+        defaultSort="newest"
+      />
 
       <div className="px-7 pb-16">
         {rows.length === 0 ? (
@@ -75,7 +126,7 @@ export default async function LeadsPage() {
                     <td className="px-3 py-2.5 text-[13px] tabular-nums text-right">{fmtMoney(lead.estimatedBudget)}</td>
                     <td className="px-3 py-2.5 text-[13px] text-text-3">—</td>
                     <td className="px-3 py-2.5 text-[13px] text-text-3">—</td>
-                    <td className="px-3 py-2.5 text-[13px] text-text-3 text-right tabular-nums">{fmtDate(lead.createdAt.toISOString())}</td>
+                    <td className="px-3 py-2.5 text-[13px] text-text-3 text-right tabular-nums">{fmtDate(lead.updatedAt.toISOString())}</td>
                     <td className="px-3 py-2.5 text-text-4">
                       <ChevronRight className="h-4 w-4" />
                     </td>
