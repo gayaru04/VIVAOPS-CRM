@@ -85,7 +85,7 @@ function fmt(n: string | number | null | undefined) {
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric", timeZone: "Australia/Melbourne" });
 }
 
 const STATUS_COLOR: Record<string, string> = {

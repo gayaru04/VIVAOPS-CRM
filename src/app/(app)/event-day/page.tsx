@@ -4,12 +4,12 @@ import { events, workOrders, suppliers, tasks, runSheetItems } from "@/lib/db/sc
 import { eq, and, inArray } from "drizzle-orm";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { fmtDate } from "@/lib/utils";
+import { fmtDate, fmtTime, todayInMelbourne } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function EventDayPage() {
   const user = await requireUser();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInMelbourne();
 
   const todayEvents = await db
     .select()
@@ -86,7 +86,7 @@ export default async function EventDayPage() {
                 <div className="divide-y divide-border">
                   {runSheet.map((item) => (
                     <div key={item.id} className="grid grid-cols-[72px_1fr] gap-3 px-5 py-2.5 text-[13px]">
-                      <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{item.time}</span>
+                      <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{fmtTime(item.time)}</span>
                       <div>
                         <p className="font-medium text-foreground">{item.title}</p>
                         {item.description && <p className="text-[11.5px] text-text-3">{item.description}</p>}

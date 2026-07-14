@@ -77,7 +77,7 @@ export async function updateEventStage(formData: FormData) {
     const [client] = await db.select().from(clients).where(eq(clients.id, current.clientId)).limit(1);
     if (client?.email) {
       const fmtDate = (d: string | null) =>
-        d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
+        d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Melbourne" }) : null;
       const subject = `Your event is confirmed – ${current.name}`;
       const html = eventConfirmationEmail({
         clientName: client.name,

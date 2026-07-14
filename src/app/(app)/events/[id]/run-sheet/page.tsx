@@ -4,17 +4,11 @@ import { events, clients, runSheetItems, suppliers, eventStaff, users } from "@/
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PrintButton } from "./print-button";
-
-function fmtTime(t: string | null) {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+import { APP_TIMEZONE, fmtTime } from "@/lib/utils";
 
 function fmtDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: APP_TIMEZONE });
 }
 
 export default async function RunSheetPage({ params }: { params: { id: string } }) {

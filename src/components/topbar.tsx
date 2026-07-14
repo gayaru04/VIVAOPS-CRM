@@ -4,6 +4,7 @@ import { initials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 
 interface TopbarProps {
@@ -63,9 +64,9 @@ export function Topbar({ user }: TopbarProps) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
-  const [dark, setDark] = useState(() =>
-    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
-  );
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // ⌘K / Escape
   useEffect(() => {
@@ -112,8 +113,7 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   function toggleDark() {
-    setDark((v) => !v);
-    document.documentElement.classList.toggle("dark");
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }
 
   const segments = pathname.split("/").filter(Boolean);
@@ -162,7 +162,7 @@ export function Topbar({ user }: TopbarProps) {
 
           {/* Dark mode */}
           <button onClick={toggleDark} className="h-[30px] w-[30px] grid place-items-center rounded-md hover:bg-hover transition-colors text-text-2 border border-transparent hover:border-border">
-            {dark ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
+            {mounted && resolvedTheme === "dark" ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
           </button>
 
           {/* Bell */}

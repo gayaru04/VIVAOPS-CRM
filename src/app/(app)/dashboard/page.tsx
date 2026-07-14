@@ -5,7 +5,7 @@ import { eq, and, count, gte, lt, desc, inArray, notInArray, sql } from "drizzle
 import { KpiCard } from "@/components/kpi";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { fmtMoney, fmtDate } from "@/lib/utils";
+import { fmtMoney, fmtDate, todayInMelbourne, APP_TIMEZONE } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -13,15 +13,15 @@ export default async function DashboardPage() {
   const orgId = user.orgId;
 
   const today = new Date();
-  const dayOfWeek = today.toLocaleDateString("en-AU", { weekday: "long" });
-  const dateStr = today.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+  const dayOfWeek = today.toLocaleDateString("en-AU", { weekday: "long", timeZone: APP_TIMEZONE });
+  const dateStr = today.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: APP_TIMEZONE });
 
   const weekAgo = new Date(today);
   weekAgo.setDate(today.getDate() - 7);
   const twoWeeksAgo = new Date(today);
   twoWeeksAgo.setDate(today.getDate() - 14);
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = todayInMelbourne();
+  const monthStart = new Date(`${todayStr.slice(0, 7)}-01T00:00:00Z`);
 
   const [
     [leadCount],

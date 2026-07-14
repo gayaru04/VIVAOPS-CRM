@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { createRunSheetItem } from "@/server/actions/run-sheet";
+import { fmtTime } from "@/lib/utils";
 
 type Item = { time: string; title: string; description: string | null };
 
@@ -60,7 +61,7 @@ export function AiRunsheetButton({ eventId, existingCount }: { eventId: string; 
         <div className="divide-y divide-border">
           {items.map((item, i) => (
             <div key={i} className="grid grid-cols-[70px_1fr] gap-3 px-4 py-2.5 text-[13px]">
-              <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{item.time}</span>
+              <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{fmtTime(item.time)}</span>
               <div>
                 <p className="font-medium text-foreground">{item.title}</p>
                 {item.description && <p className="text-[11.5px] text-text-3 mt-0.5">{item.description}</p>}

@@ -4,17 +4,14 @@ import { events, tasks, workOrders, suppliers } from "@/lib/db/schema";
 import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { fmtDate } from "@/lib/utils";
+import { fmtDate, todayInMelbourne, addDaysToDateString } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function OpsPage() {
   const user = await requireRole("admin", "manager");
 
-  const today = new Date();
-  const in14 = new Date(today);
-  in14.setDate(today.getDate() + 14);
-  const todayStr = today.toISOString().slice(0, 10);
-  const in14Str = in14.toISOString().slice(0, 10);
+  const todayStr = todayInMelbourne();
+  const in14Str = addDaysToDateString(todayStr, 14);
 
   const [upcoming, overdueTasks, pendingWOs] = await Promise.all([
     db

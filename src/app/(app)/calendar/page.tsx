@@ -4,7 +4,7 @@ import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { fmtDate } from "@/lib/utils";
+import { fmtDate, fmtTime } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function CalendarPage() {
@@ -33,7 +33,7 @@ export default async function CalendarPage() {
                 <div>
                   <p className="text-[13px] font-medium text-foreground">{event.name}</p>
                   <p className="text-[11.5px] text-text-3">
-                    {fmtDate(event.eventDate)}{event.eventTime ? ` · ${event.eventTime}` : ""}
+                    {fmtDate(event.eventDate)}{event.eventTime ? ` · ${fmtTime(event.eventTime)}` : ""}
                   </p>
                   {event.venue && <p className="text-[11.5px] text-text-3">{event.venue}</p>}
                 </div>

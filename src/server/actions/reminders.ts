@@ -34,7 +34,7 @@ export async function sendEventReminder(formData: FormData) {
 
   const clientName = client.name;
   const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
+    d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Melbourne" }) : null;
 
   let subject = "";
   let emailHtml = "";

@@ -60,7 +60,7 @@ function fmtTime(t: string | null) {
 
 function fmtDate(d: string | null) {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Melbourne" });
 }
 
 interface Item {

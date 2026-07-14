@@ -5,6 +5,7 @@ import { eq, and, inArray, notInArray } from "drizzle-orm";
 import { sendEmail, eventReminderEmail, npsEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 import { randomUUID } from "crypto";
+import { todayInMelbourne, addDaysToDateString } from "@/lib/utils";
 
 // Called daily by Vercel Cron (see vercel.json).
 // Also callable manually: GET /api/cron/reminders?secret=<CRON_SECRET>
@@ -18,13 +19,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const today = new Date();
-  const in7 = new Date(today); in7.setDate(today.getDate() + 7);
-  const in1 = new Date(today); in1.setDate(today.getDate() + 1);
+  const todayStr = todayInMelbourne();
+  const in7Str = addDaysToDateString(todayStr, 7);
+  const in1Str = addDaysToDateString(todayStr, 1);
   // NPS: events that ended exactly 2 days ago
-  const minus2 = new Date(today); minus2.setDate(today.getDate() - 2);
-
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const minus2Str = addDaysToDateString(todayStr, -2);
 
   const results: Array<{ event: string; channel: string; status: string }> = [];
 
@@ -35,7 +34,7 @@ export async function GET(req: Request) {
     .leftJoin(clients, eq(events.clientId, clients.id))
     .where(
       and(
-        inArray(events.eventDate, [fmt(in7), fmt(in1)]),
+        inArray(events.eventDate, [in7Str, in1Str]),
         inArray(events.stage, ["confirmed", "planning", "contract"])
       )
     );
@@ -43,9 +42,9 @@ export async function GET(req: Request) {
   for (const { event, client } of upcoming) {
     if (!client?.email) continue;
 
-    const daysAway = event.eventDate === fmt(in1) ? 1 : 7;
+    const daysAway = event.eventDate === in1Str ? 1 : 7;
     const fmtDate = (d: string | null) =>
-      d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : null;
+      d ? new Date(d).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Melbourne" }) : null;
 
     const subject = daysAway === 1
       ? `Your event is tomorrow – ${event.name}`
@@ -95,12 +94,12 @@ export async function GET(req: Request) {
 
   const npsFilter = alreadySentIds.length > 0
     ? and(
-        eq(events.eventDate, fmt(minus2)),
+        eq(events.eventDate, minus2Str),
         inArray(events.stage, ["completed"]),
         notInArray(events.id, alreadySentIds)
       )
     : and(
-        eq(events.eventDate, fmt(minus2)),
+        eq(events.eventDate, minus2Str),
         inArray(events.stage, ["completed"])
       );
 

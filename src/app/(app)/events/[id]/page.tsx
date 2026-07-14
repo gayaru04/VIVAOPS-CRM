@@ -11,7 +11,7 @@ import { notFound } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { fmtDate, fmtMoney } from "@/lib/utils";
+import { fmtDate, fmtMoney, fmtTime } from "@/lib/utils";
 import { updateEventStage, cloneEvent } from "@/server/actions/events";
 import { updateTaskStatus } from "@/server/actions/tasks";
 import { createComm } from "@/server/actions/comms";
@@ -631,7 +631,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                   ? <p className="text-[13px] text-text-3 px-4 py-3">No items yet.</p>
                   : eventRunSheet.map((item, i) => (
                     <div key={item.id} className={`grid grid-cols-[70px_1fr] gap-3 px-4 py-3 text-[13px] ${i !== 0 ? "border-t border-border" : ""}`}>
-                      <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{item.time}</span>
+                      <span className="font-mono text-[12px] text-text-3 tabular-nums pt-0.5">{fmtTime(item.time)}</span>
                       <div>
                         <p className="font-medium text-foreground">{item.title}</p>
                         {item.description && <p className="text-[11.5px] text-text-3 mt-0.5">{item.description}</p>}
