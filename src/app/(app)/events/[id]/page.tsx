@@ -114,7 +114,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
       {/* Hero */}
       <div className="px-7 pt-6 pb-5 border-b border-border"
         style={{ background: "radial-gradient(120% 80% at 100% 0%, hsl(252 70% 97%) 0%, transparent 55%), hsl(var(--background))" }}>
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-start flex-wrap justify-between gap-6">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-primary mb-1.5">
               {event.type?.toUpperCase()} · <StatusBadge status={event.stage} />
@@ -138,7 +138,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
           </div>
 
           {/* Countdown + actions */}
-          <div className="flex flex-col items-end gap-3 flex-shrink-0">
+          <div className="flex flex-col items-end gap-3 w-full sm:w-auto sm:flex-shrink-0">
             {daysToGo !== null && (
               <div className="flex items-center gap-3.5 border border-border bg-surface rounded-xl px-4 py-3 shadow-soft">
                 <span className="text-[30px] font-semibold tabular-nums tracking-tight text-foreground leading-none">
@@ -450,9 +450,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     </div>
                   </div>
                   {q.notes && <p className="px-4 py-2.5 text-[12px] text-text-3 border-b border-border">{q.notes}</p>}
-                  <div className="divide-y divide-border">
+                  <div className="divide-y divide-border overflow-x-auto">
                     {((q.lineItems as Array<{description:string;qty:number;rate:number;amount:number}>) ?? []).map((li, i) => (
-                      <div key={i} className="grid grid-cols-[1fr_60px_90px_90px] gap-3 px-4 py-2.5 text-[13px]">
+                      <div key={i} className="grid grid-cols-[1fr_60px_90px_90px] gap-3 px-4 py-2.5 text-[13px] min-w-[420px]">
                         <span className="text-foreground">{li.description}</span>
                         <span className="text-text-3 text-right tabular-nums">{li.qty}</span>
                         <span className="text-text-3 text-right tabular-nums">{fmtMoney(String(li.rate ?? 0))}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { Search, LogOut, Moon, Sun, Bell, Plus, ChevronRight } from "lucide-react";
+import { Search, LogOut, Moon, Sun, Bell, Plus, ChevronRight, Menu } from "lucide-react";
 import { initials } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, usePathname } from "next/navigation";
@@ -9,6 +9,7 @@ import Link from "next/link";
 
 interface TopbarProps {
   user: { name: string; email: string; role: string };
+  onOpenMobileNav?: () => void;
 }
 
 const routeLabels: Record<string, string> = {
@@ -57,7 +58,7 @@ const QUICK_CREATE = [
   { label: "New Supplier",   href: "/suppliers/new" },
 ];
 
-export function Topbar({ user }: TopbarProps) {
+export function Topbar({ user, onOpenMobileNav }: TopbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen]   = useState(false);
@@ -170,31 +171,41 @@ export function Topbar({ user }: TopbarProps) {
 
   return (
     <>
-      <header className="h-12 border-b border-border bg-surface flex items-center gap-2 px-[18px] flex-shrink-0">
+      <header className="h-12 border-b border-border bg-surface flex items-center gap-2 px-3 sm:px-[18px] flex-shrink-0">
+        {/* Mobile menu trigger */}
+        <button
+          onClick={onOpenMobileNav}
+          aria-label="Open menu"
+          className="md:hidden h-8 w-8 grid place-items-center rounded-md hover:bg-hover transition-colors text-text-2 flex-shrink-0"
+        >
+          <Menu className="h-[18px] w-[18px]" />
+        </button>
+
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1.5 text-[13px] text-text-3 min-w-0">
-          <Link href="/dashboard" className="hover:text-foreground transition-colors">Viva Melbourne</Link>
-          <span className="opacity-50">/</span>
+        <nav className="flex items-center gap-1.5 text-[13px] text-text-3 min-w-0 flex-1 overflow-hidden whitespace-nowrap">
+          <Link href="/dashboard" className="hidden sm:inline hover:text-foreground transition-colors flex-shrink-0">Viva Melbourne</Link>
+          <span className="hidden sm:inline opacity-50 flex-shrink-0">/</span>
           {isNested ? (
             <>
-              <Link href={`/${segments[0]}`} className="hover:text-foreground transition-colors">{section}</Link>
-              <span className="opacity-50">/</span>
-              <span className="text-foreground font-medium">{leafLabel}</span>
+              <Link href={`/${segments[0]}`} className="hover:text-foreground transition-colors flex-shrink-0 truncate">{section}</Link>
+              <span className="opacity-50 flex-shrink-0">/</span>
+              <span className="text-foreground font-medium truncate">{leafLabel}</span>
             </>
           ) : (
-            <span className="text-foreground font-medium">{section}</span>
+            <span className="text-foreground font-medium truncate">{section}</span>
           )}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           {/* Search trigger */}
           <button
             onClick={() => { setSearchOpen(true); setQuery(""); }}
-            className="flex items-center gap-2 text-[12.5px] text-text-3 border border-border rounded-md px-2.5 py-[5px] hover:border-border-strong hover:text-text-2 transition-all bg-surface-2 min-w-[280px]"
+            aria-label="Search"
+            className="flex items-center gap-2 text-[12.5px] text-text-3 border border-border rounded-md h-8 w-8 sm:w-auto sm:h-auto justify-center sm:justify-start px-0 sm:px-2.5 sm:py-[5px] hover:border-border-strong hover:text-text-2 transition-all bg-surface-2 sm:min-w-[220px] lg:min-w-[280px]"
           >
             <Search className="h-[13px] w-[13px] flex-shrink-0" />
-            <span className="flex-1 text-left">Jump to leads, events, clients…</span>
-            <kbd className="font-mono text-[10.5px] border border-border rounded px-[5px] py-[1px] bg-surface text-text-3">⌘K</kbd>
+            <span className="hidden sm:inline flex-1 text-left truncate">Jump to leads, events, clients…</span>
+            <kbd className="hidden sm:inline font-mono text-[10.5px] border border-border rounded px-[5px] py-[1px] bg-surface text-text-3">⌘K</kbd>
           </button>
 
           {/* Dark mode */}

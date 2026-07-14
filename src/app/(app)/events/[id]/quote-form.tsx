@@ -55,8 +55,9 @@ export function QuoteForm({ eventId }: { eventId: string }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg overflow-hidden">
-      {/* Line items header */}
-      <div className="grid grid-cols-[1fr_80px_100px_90px_32px] gap-2 px-4 py-2 border-b border-border bg-surface-2">
+      {/* Line items — horizontally scrollable on narrow screens rather than clipped */}
+      <div className="overflow-x-auto">
+      <div className="grid grid-cols-[1fr_80px_100px_90px_32px] gap-2 px-4 py-2 border-b border-border bg-surface-2 min-w-[480px]">
         {["Description", "Qty", "Rate", "Amount", ""].map((h) => (
           <span key={h} className="text-[11px] font-semibold text-text-3 uppercase tracking-[0.06em]">{h}</span>
         ))}
@@ -67,7 +68,7 @@ export function QuoteForm({ eventId }: { eventId: string }) {
         {items.map((item) => {
           const amount = (Number(item.qty) || 0) * (Number(item.rate) || 0);
           return (
-            <div key={item.id} className="grid grid-cols-[1fr_80px_100px_90px_32px] gap-2 px-4 py-2 items-center">
+            <div key={item.id} className="grid grid-cols-[1fr_80px_100px_90px_32px] gap-2 px-4 py-2 items-center min-w-[480px]">
               <input
                 value={item.description}
                 onChange={(e) => updateItem(item.id, "description", e.target.value)}
@@ -105,6 +106,7 @@ export function QuoteForm({ eventId }: { eventId: string }) {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Add line */}

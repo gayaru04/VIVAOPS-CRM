@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, CalendarDays, ListTodo, Kanban,
   Star, Truck, ClipboardList, Sunset, BarChart3, ScrollText,
-  Building2, CheckSquare, TrendingUp, Settings,
+  Building2, CheckSquare, TrendingUp, Settings, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,13 +48,45 @@ interface SidebarProps {
   userName?: string;
   userRole?: string;
   counts?: Record<string, number>;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export function Sidebar({ userName, userRole, counts }: SidebarProps) {
+export function Sidebar({ userName, userRole, counts, mobileOpen, onCloseMobile }: SidebarProps) {
+  return (
+    <>
+      {/* Desktop rail */}
+      <aside className="hidden md:flex flex-col w-[232px] border-r border-border bg-surface-2 h-screen sticky top-0 flex-shrink-0">
+        <SidebarContent userName={userName} userRole={userRole} counts={counts} />
+      </aside>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 bg-black/50" onClick={onCloseMobile} />
+          <aside className="relative z-10 flex flex-col w-[264px] max-w-[80vw] h-full bg-surface-2 border-r border-border">
+            <button
+              onClick={onCloseMobile}
+              aria-label="Close menu"
+              className="absolute top-2.5 right-2.5 h-7 w-7 grid place-items-center rounded-md text-text-3 hover:bg-hover hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <SidebarContent userName={userName} userRole={userRole} counts={counts} onNavigate={onCloseMobile} />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SidebarContent({
+  userName, userRole, counts, onNavigate,
+}: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex flex-col w-[232px] border-r border-border bg-surface-2 h-screen sticky top-0 flex-shrink-0">
+    <>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-3.5 border-b border-border h-12 flex-shrink-0">
         <div
@@ -86,6 +118,7 @@ export function Sidebar({ userName, userRole, counts }: SidebarProps) {
                 <Link
                   key={item.id}
                   href={item.id}
+                  onClick={onNavigate}
                   style={item.dimmed ? { opacity: 0.55 } : undefined}
                   className={cn(
                     "flex items-center gap-2.5 rounded-[5px] px-2 py-[5.5px] text-[13px] transition-colors select-none",
@@ -115,6 +148,7 @@ export function Sidebar({ userName, userRole, counts }: SidebarProps) {
       {userName && (
         <Link
           href="/account"
+          onClick={onNavigate}
           className="border-t border-border px-2 py-2 flex items-center gap-2 flex-shrink-0 hover:bg-hover transition-colors group"
         >
           <div
@@ -130,6 +164,6 @@ export function Sidebar({ userName, userRole, counts }: SidebarProps) {
           <Settings className="h-3.5 w-3.5 text-text-4 group-hover:text-text-2 transition-colors flex-shrink-0" />
         </Link>
       )}
-    </aside>
+    </>
   );
 }
