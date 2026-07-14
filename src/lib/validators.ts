@@ -6,7 +6,7 @@ export const createLeadSchema = z.object({
   phone: z.string().optional(),
   company: z.string().optional(),
   source: z.enum(["website", "referral", "social", "email", "phone", "other"]).default("website"),
-  eventType: z.enum(["wedding", "corporate", "birthday", "gala", "conference", "other"]).optional(),
+  eventType: z.enum(["wedding", "corporate", "birthday", "gala", "conference", "other"]).optional().or(z.literal("")),
   eventDate: z.string().optional(),
   estimatedBudget: z.string().optional(),
   guestCount: z.coerce.number().int().positive().optional().or(z.literal("")),

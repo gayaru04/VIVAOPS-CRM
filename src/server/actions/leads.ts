@@ -47,6 +47,7 @@ export async function updateLead(id: string, formData: FormData) {
 
   await db.update(leads).set({
     ...data,
+    eventType: data.eventType || null,
     guestCount: data.guestCount ? Number(data.guestCount) : undefined,
     updatedAt: new Date(),
   }).where(eq(leads.id, id));
