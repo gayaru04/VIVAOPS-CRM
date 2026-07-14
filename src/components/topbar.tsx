@@ -24,8 +24,11 @@ const routeLabels: Record<string, string> = {
   checklists: "Checklists",
   "event-day": "Event day",
   ops: "Ops",
+  analytics: "Analytics",
   audit: "Audit log",
   settings: "Settings",
+  users: "Users",
+  account: "Account",
 };
 
 const COMMANDS = [

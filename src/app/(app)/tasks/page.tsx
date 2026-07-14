@@ -51,7 +51,7 @@ export default async function TasksPage() {
                       <StatusBadge status={task.priority} />
                       <StatusBadge status={task.status} />
                       <form action={updateTaskStatus.bind(null, task.id, "done")}>
-                        <SubmitButton className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
+                        <SubmitButton variant="outline" className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
                           Done
                         </SubmitButton>
                       </form>

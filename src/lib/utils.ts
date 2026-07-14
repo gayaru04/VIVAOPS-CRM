@@ -8,11 +8,12 @@ export function cn(...inputs: ClassValue[]) {
 export function fmtMoney(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   const num = typeof value === "string" ? Number(value) : value;
+  const hasCents = Math.round(num * 100) % 100 !== 0;
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: 2,
   }).format(num);
 }
 

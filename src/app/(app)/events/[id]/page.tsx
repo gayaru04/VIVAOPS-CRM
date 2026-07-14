@@ -22,6 +22,7 @@ import { addEventStaff, removeEventStaff } from "@/server/actions/staff";
 import { updateQuoteStatus } from "@/server/actions/quotes";
 import { FileUploadForm } from "./file-upload-form";
 import { QuoteForm } from "./quote-form";
+import { DeleteQuoteButton } from "./delete-quote-button";
 import { AiRunsheetButton } from "./ai-runsheet-button";
 import { getSignedUrl } from "@/lib/storage";
 import Link from "next/link";
@@ -363,7 +364,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                       <StatusBadge status={task.status} />
                       {(task.status === "todo" || task.status === "in_progress") && (
                         <form action={updateTaskStatus.bind(null, task.id, "done")}>
-                          <SubmitButton className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
+                          <SubmitButton variant="outline" className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
                             Done
                           </SubmitButton>
                         </form>
@@ -445,6 +446,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                           <SubmitButton variant="outline" size="sm" className="h-6 px-2 text-[11px] capitalize">{s}</SubmitButton>
                         </form>
                       ))}
+                      <DeleteQuoteButton quoteId={q.id} eventId={event.id} quoteNumber={q.number} />
                     </div>
                   </div>
                   {q.notes && <p className="px-4 py-2.5 text-[12px] text-text-3 border-b border-border">{q.notes}</p>}

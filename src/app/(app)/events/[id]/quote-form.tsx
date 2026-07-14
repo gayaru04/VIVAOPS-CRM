@@ -1,21 +1,24 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { createQuote } from "@/server/actions/quotes";
 import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 type LineItem = { id: number; description: string; qty: string; rate: string };
 
 let nextId = 1;
+const blankItem = (): LineItem => ({ id: nextId++, description: "", qty: "1", rate: "" });
 
 export function QuoteForm({ eventId }: { eventId: string }) {
-  const [items, setItems] = useState<LineItem[]>([{ id: nextId++, description: "", qty: "1", rate: "" }]);
+  const [items, setItems] = useState<LineItem[]>([blankItem()]);
   const [taxPct, setTaxPct] = useState("10");
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const updateItem = (id: number, field: keyof Omit<LineItem, "id">, value: string) =>
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
 
-  const addItem = () => setItems((prev) => [...prev, { id: nextId++, description: "", qty: "1", rate: "" }]);
+  const addItem = () => setItems((prev) => [...prev, blankItem()]);
   const removeItem = (id: number) => setItems((prev) => prev.filter((i) => i.id !== id));
 
   const subtotal = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
@@ -26,7 +29,7 @@ export function QuoteForm({ eventId }: { eventId: string }) {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData();
+    const fd = new FormData(e.currentTarget);
     fd.set("eventId", eventId);
     fd.set("subtotal", subtotal.toString());
     fd.set("tax", tax.toString());
@@ -37,11 +40,21 @@ export function QuoteForm({ eventId }: { eventId: string }) {
       rate: Number(i.rate) || 0,
       amount: (Number(i.qty) || 1) * (Number(i.rate) || 0),
     }))));
-    startTransition(() => createQuote(fd));
+    startTransition(async () => {
+      try {
+        await createQuote(fd);
+        toast.success("Quote saved");
+        setItems([blankItem()]);
+        setTaxPct("10");
+        formRef.current?.reset();
+      } catch (err) {
+        toast.error(String(err));
+      }
+    });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg overflow-hidden">
+    <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg overflow-hidden">
       {/* Line items header */}
       <div className="grid grid-cols-[1fr_80px_100px_90px_32px] gap-2 px-4 py-2 border-b border-border bg-surface-2">
         {["Description", "Qty", "Rate", "Amount", ""].map((h) => (

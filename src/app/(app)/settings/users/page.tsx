@@ -41,7 +41,7 @@ export default async function UsersPage() {
                   <span className="text-[11.5px] text-text-4 tabular-nums">{fmtDate(u.createdAt.toISOString())}</span>
                   {u.id !== user.id && (
                     <form action={updateUserRole.bind(null, u.id, u.role === "admin" ? "coordinator" : "admin")}>
-                      <SubmitButton className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
+                      <SubmitButton variant="outline" className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
                         {u.role === "admin" ? "Remove admin" : "Make admin"}
                       </SubmitButton>
                     </form>

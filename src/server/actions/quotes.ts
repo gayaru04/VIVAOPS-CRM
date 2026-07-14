@@ -4,7 +4,7 @@ import { quotes } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { createQuoteSchema } from "@/lib/validators";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 function generateQuoteNumber(): string {
@@ -61,4 +61,24 @@ export async function updateQuoteStatus(
   });
 
   revalidatePath(`/events/${quote.eventId}`);
+}
+
+export async function deleteQuote(id: string, eventId: string) {
+  const user = await requireRole("admin", "manager");
+
+  const [quote] = await db.select().from(quotes).where(and(eq(quotes.id, id), eq(quotes.orgId, user.orgId))).limit(1);
+  if (!quote) throw new Error("Quote not found");
+
+  await db.delete(quotes).where(eq(quotes.id, id));
+
+  await logAudit({
+    orgId: user.orgId,
+    actor: user.id,
+    action: "quote.deleted",
+    entityType: "quote",
+    entityId: id,
+    summary: `Deleted quote ${quote.number}`,
+  });
+
+  revalidatePath(`/events/${eventId}`);
 }
