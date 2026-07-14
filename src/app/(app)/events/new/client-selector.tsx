@@ -8,11 +8,12 @@ interface Client { id: string; name: string }
 
 interface ClientSelectorProps {
   clients: Client[];
+  value: string;
+  onChange: (id: string) => void;
 }
 
-export function ClientSelector({ clients }: ClientSelectorProps) {
+export function ClientSelector({ clients, value, onChange }: ClientSelectorProps) {
   const [list, setList] = useState<Client[]>(clients);
-  const [selected, setSelected] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ export function ClientSelector({ clients }: ClientSelectorProps) {
       try {
         const newClient = await createClientQuick({ name: name.trim(), email: email.trim() || undefined, phone: phone.trim() || undefined });
         setList((prev) => [...prev, newClient]);
-        setSelected(newClient.id);
+        onChange(newClient.id);
         setShowModal(false);
         setName(""); setEmail(""); setPhone("");
       } catch (err) {
@@ -38,14 +39,10 @@ export function ClientSelector({ clients }: ClientSelectorProps) {
 
   return (
     <>
-      {/* Hidden input carries the value to the parent form */}
-      <input type="hidden" name="clientId" value={selected} required />
-
       <div className="flex gap-2">
         <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className="flex h-9 w-full rounded-md border border-border bg-surface px-3 py-1 text-[13px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="">— Select client —</option>
