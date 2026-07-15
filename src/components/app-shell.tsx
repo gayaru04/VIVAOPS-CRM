@@ -23,7 +23,13 @@ export function AppShell({ user, navCounts, children }: AppShellProps) {
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar user={user} onOpenMobileNav={() => setMobileNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            el.style.setProperty("--scroll-y", String(el.scrollTop));
+          }}
+        >
           {children}
         </main>
       </div>

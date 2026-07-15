@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { AnimatedNumber } from "@/components/motion";
 
 interface KpiCardProps {
   label: string;
@@ -11,9 +12,9 @@ interface KpiCardProps {
 
 export function KpiCard({ label, value, delta, deltaUp, className }: KpiCardProps) {
   return (
-    <div className={cn("bg-surface border border-border rounded-lg p-4", className)}>
+    <div className={cn("bg-surface border border-border rounded-lg p-4 card-lift", className)}>
       <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-text-3">{label}</div>
-      <div className="text-[26px] font-semibold tracking-[-0.025em] tabular-nums mt-1.5 text-foreground leading-none">{value}</div>
+      <div className="text-[26px] font-semibold tracking-[-0.025em] tabular-nums mt-1.5 text-foreground leading-none"><AnimatedNumber value={value} /></div>
       {delta && (
         <div className={cn(
           "flex items-center gap-1 text-[11.5px] mt-1",

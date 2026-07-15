@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { leads, events, tasks, quotes } from "@/lib/db/schema";
 import { eq, and, count, gte, lt, desc, inArray, notInArray, sql } from "drizzle-orm";
 import { KpiCard } from "@/components/kpi";
+import { FadeUp, Stagger, StaggerItem } from "@/components/motion";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { fmtMoney, fmtDate, todayInMelbourne, APP_TIMEZONE } from "@/lib/utils";
@@ -67,17 +68,17 @@ export default async function DashboardPage() {
 
       <div className="px-7 pt-5 pb-16 flex flex-col gap-[18px]">
         {/* KPI row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <KpiCard label="New Leads"     value={leadCount?.count ?? 0}        {...weekDelta(leadsThisWeek?.count ?? 0, leadsPrevWeek?.count ?? 0)} />
-          <KpiCard label="Active Events" value={activeEventCount?.count ?? 0} {...weekDelta(eventsThisWeek?.count ?? 0, eventsPrevWeek?.count ?? 0)} />
-          <KpiCard label="Open Tasks"    value={openTaskCount?.count ?? 0} />
-          <KpiCard label="Revenue (MTD)" value={fmtMoney(revenueMtd?.total ?? "0")} />
-        </div>
+        <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <StaggerItem><KpiCard label="New Leads"     value={leadCount?.count ?? 0}        {...weekDelta(leadsThisWeek?.count ?? 0, leadsPrevWeek?.count ?? 0)} /></StaggerItem>
+          <StaggerItem><KpiCard label="Active Events" value={activeEventCount?.count ?? 0} {...weekDelta(eventsThisWeek?.count ?? 0, eventsPrevWeek?.count ?? 0)} /></StaggerItem>
+          <StaggerItem><KpiCard label="Open Tasks"    value={openTaskCount?.count ?? 0} /></StaggerItem>
+          <StaggerItem><KpiCard label="Revenue (MTD)" value={fmtMoney(revenueMtd?.total ?? "0")} /></StaggerItem>
+        </Stagger>
 
         {/* Pipeline summary + needs attention */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           {/* Upcoming events */}
-          <div className="bg-surface border border-border rounded-lg overflow-hidden">
+          <FadeUp delay={0.15} className="bg-surface border border-border rounded-lg overflow-hidden card-lift">
             <div className="flex items-center gap-2 px-3.5 py-3 border-b border-border">
               <div>
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-text-3">Delivery</p>
@@ -102,8 +103,8 @@ export default async function DashboardPage() {
                 {upcomingEvents.length === 0 && (
                   <tr><td colSpan={4} className="px-3 py-4 text-[12.5px] text-text-3">No events yet.</td></tr>
                 )}
-                {upcomingEvents.map((event) => (
-                  <tr key={event.id} className="border-b border-border last:border-0 hover:bg-hover transition-colors">
+                {upcomingEvents.map((event, i) => (
+                  <tr key={event.id} className="border-b border-border last:border-0 hover:bg-hover transition-colors row-in" style={{ animationDelay: `${0.25 + i * 0.05}s` }}>
                     <td className="px-3 py-2.5 text-[13px] font-medium">
                       <Link href={`/events/${event.id}`} className="hover:text-primary transition-colors">{event.name}</Link>
                     </td>
@@ -114,10 +115,10 @@ export default async function DashboardPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </FadeUp>
 
           {/* Needs attention */}
-          <div className="bg-surface border border-border rounded-lg overflow-hidden">
+          <FadeUp delay={0.22} className="bg-surface border border-border rounded-lg overflow-hidden card-lift">
             <div className="flex items-center gap-2 px-3.5 py-3 border-b border-border">
               <div>
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-text-3">Pipeline</p>
@@ -128,8 +129,8 @@ export default async function DashboardPage() {
               {recentLeads.length === 0 && (
                 <p className="py-3 text-[12.5px] text-text-3">No leads yet.</p>
               )}
-              {recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center gap-2.5 py-2.5 border-b border-border last:border-0">
+              {recentLeads.map((lead, i) => (
+                <div key={lead.id} className="flex items-center gap-2.5 py-2.5 border-b border-border last:border-0 row-in" style={{ animationDelay: `${0.3 + i * 0.05}s` }}>
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0"
                     style={{ background: `hsl(${(lead.name.charCodeAt(0) * 17) % 360} 60% 55%)` }}
@@ -151,7 +152,7 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             </div>
-          </div>
+          </FadeUp>
         </div>
       </div>
     </>

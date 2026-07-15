@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { motion } from "motion/react";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
 import { Loader2, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -161,24 +161,57 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right panel — image */}
-      <div className="relative hidden md:block md:w-1/2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/login-bg.png"
-          alt="VivaOps login background"
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-        <div className="absolute bottom-10 left-10 right-10">
-          <p className="text-white text-xl font-semibold leading-snug drop-shadow-lg">
-            Every detail, perfectly managed.
-          </p>
-          <p className="text-white/60 text-sm mt-1">
-            Melbourne&apos;s premier event operations platform.
-          </p>
-        </div>
-      </div>
+      {/* Right panel — image with mouse parallax */}
+      <ParallaxPanel />
+    </div>
+  );
+}
+
+function ParallaxPanel() {
+  const reduced = useReducedMotion();
+  const mx = useMotionValue(0); // -0.5 … 0.5 across the panel
+  const my = useMotionValue(0);
+  const sx = useSpring(mx, { stiffness: 60, damping: 20 });
+  const sy = useSpring(my, { stiffness: 60, damping: 20 });
+
+  // Image drifts with the cursor; caption drifts less, so the layers separate
+  const imgX = useTransform(sx, [-0.5, 0.5], [14, -14]);
+  const imgY = useTransform(sy, [-0.5, 0.5], [10, -10]);
+  const capX = useTransform(sx, [-0.5, 0.5], [-6, 6]);
+  const capY = useTransform(sy, [-0.5, 0.5], [-4, 4]);
+
+  function onMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (reduced) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    mx.set((e.clientX - r.left) / r.width - 0.5);
+    my.set((e.clientY - r.top) / r.height - 0.5);
+  }
+
+  return (
+    <div
+      className="relative hidden md:block md:w-1/2 overflow-hidden"
+      onMouseMove={onMove}
+      onMouseLeave={() => { mx.set(0); my.set(0); }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <motion.img
+        src="/login-bg.png"
+        alt="VivaOps login background"
+        className="h-full w-full object-cover scale-[1.06]"
+        style={reduced ? undefined : { x: imgX, y: imgY }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+      <motion.div
+        className="absolute bottom-10 left-10 right-10"
+        style={reduced ? undefined : { x: capX, y: capY }}
+      >
+        <p className="text-white text-xl font-semibold leading-snug drop-shadow-lg">
+          Every detail, perfectly managed.
+        </p>
+        <p className="text-white/60 text-sm mt-1">
+          Melbourne&apos;s premier event operations platform.
+        </p>
+      </motion.div>
     </div>
   );
 }
