@@ -83,7 +83,6 @@ export function HBarChart({ rows, max }: { rows: BarRow[]; max?: number }) {
     <div className="flex flex-col">
       {tip.node}
       {rows.map((row, ri) => {
-        const total = row.parts.reduce((s, p) => s + p.value, 0);
         return (
           <div
             key={row.label}
