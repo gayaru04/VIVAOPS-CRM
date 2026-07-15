@@ -183,7 +183,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <form key={stage} action={updateEventStage}>
               <input type="hidden" name="eventId" value={event.id} />
               <input type="hidden" name="stage" value={stage} />
-              <SubmitButton className={`h-[26px] px-2.5 rounded-[5px] text-[12px] font-medium border ${
+              <SubmitButton variant="outline" className={`h-[26px] px-2.5 rounded-[5px] text-[12px] font-medium border ${
                 event.stage === stage
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-text-3 hover:bg-hover hover:text-foreground"

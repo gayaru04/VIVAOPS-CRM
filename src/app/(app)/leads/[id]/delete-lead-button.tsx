@@ -1,19 +1,21 @@
 "use client";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { deleteQuote } from "@/server/actions/quotes";
+import { deleteLead } from "@/server/actions/leads";
 
-export function DeleteQuoteButton({ quoteId, eventId, quoteNumber }: { quoteId: string; eventId: string; quoteNumber: string }) {
+export function DeleteLeadButton({ leadId, leadName }: { leadId: string; leadName: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
     startTransition(async () => {
       try {
-        await deleteQuote(quoteId, eventId);
-        toast.success(`Deleted quote ${quoteNumber}`);
-        setOpen(false);
+        await deleteLead(leadId);
+        toast.success(`Deleted lead ${leadName}`);
+        router.push("/leads");
       } catch (err) {
         toast.error(String(err));
       }
@@ -24,19 +26,17 @@ export function DeleteQuoteButton({ quoteId, eventId, quoteNumber }: { quoteId: 
     <div className="relative">
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center h-6 w-6 rounded text-text-3 hover:text-red-500 hover:bg-hover transition-colors"
-        aria-label={`Delete quote ${quoteNumber}`}
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border text-[13px] font-medium text-text-3 hover:text-red-500 hover:bg-hover transition-colors"
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <Trash2 className="h-3.5 w-3.5" /> Delete
       </button>
 
       {open && (
         <>
-          {/* Backdrop — doesn't shift any surrounding layout, unlike the row itself */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 w-56 border border-border bg-surface rounded-lg shadow-pop p-3 flex flex-col gap-2.5">
+          <div className="absolute right-0 top-9 z-20 w-60 border border-border bg-surface rounded-lg shadow-pop p-3 flex flex-col gap-2.5">
             <p className="text-[12.5px] text-foreground">
-              Delete quote <span className="font-medium">{quoteNumber}</span>? This can&apos;t be undone.
+              Delete lead <span className="font-medium">{leadName}</span>? This can&apos;t be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button

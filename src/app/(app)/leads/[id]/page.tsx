@@ -12,6 +12,7 @@ import { convertLeadToEvent } from "@/server/actions/leads";
 import { createComm } from "@/server/actions/comms";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectInput } from "@/components/ui/select-input";
+import { DeleteLeadButton } from "./delete-lead-button";
 import Link from "next/link";
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const user = await requireUser();
@@ -43,6 +44,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
             <SubmitButton size="sm" pendingText="Converting…">Convert to Event</SubmitButton>
           </form>
         )}
+        <DeleteLeadButton leadId={lead.id} leadName={lead.name} />
       </PageHeader>
 
       <div className="px-7 py-6 flex flex-col gap-6 max-w-2xl">

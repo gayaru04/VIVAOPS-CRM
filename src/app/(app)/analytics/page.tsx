@@ -93,7 +93,7 @@ export default async function AnalyticsPage() {
                       <span className="text-[13px] font-medium text-foreground">{SOURCE_LABELS[src] ?? src}</span>
                       <div className="flex items-center gap-3 text-[12px] text-text-3 tabular-nums">
                         <span>{conv} converted</span>
-                        <span className="font-semibold text-foreground">{cnt} leads</span>
+                        <span className="font-semibold text-foreground">{cnt} {cnt === 1 ? "lead" : "leads"}</span>
                       </div>
                     </div>
                     <div className="h-1.5 rounded-full bg-surface-3 overflow-hidden">
