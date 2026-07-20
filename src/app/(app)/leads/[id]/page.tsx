@@ -44,7 +44,9 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
             <SubmitButton size="sm" pendingText="Converting…">Convert to Event</SubmitButton>
           </form>
         )}
-        <DeleteLeadButton leadId={lead.id} leadName={lead.name} />
+        {lead.status !== "converted" && (
+          <DeleteLeadButton leadId={lead.id} leadName={lead.name} />
+        )}
       </PageHeader>
 
       <div className="px-7 py-6 flex flex-col gap-6 max-w-2xl">

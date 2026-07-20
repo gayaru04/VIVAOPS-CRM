@@ -23,7 +23,13 @@ export default async function AccountPage() {
 
         {/* Password */}
         <Section title="Password" description="Change your login password.">
-          <PasswordForm />
+          {user.email === "demo@vivamelbourne.com.au" ? (
+            <p className="text-[13px] text-text-3 max-w-sm">
+              Password changes are disabled for the shared demo account.
+            </p>
+          ) : (
+            <PasswordForm />
+          )}
         </Section>
 
         {/* Appearance */}

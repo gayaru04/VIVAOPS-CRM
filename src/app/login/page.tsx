@@ -9,7 +9,6 @@ import { Loader2, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,6 +34,7 @@ const itemVariants = {
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [authError, setAuthError] = React.useState<string | null>(null);
   const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
@@ -48,12 +48,22 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormValues) {
     setIsLoading(true);
+    setAuthError(null);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
-      if (error) { toast.error(error.message); return; }
+      if (error) {
+        setAuthError(
+          error.message === "Invalid login credentials"
+            ? "Invalid email or password. Please try again."
+            : error.message
+        );
+        return;
+      }
       router.push("/dashboard");
       router.refresh();
+    } catch {
+      setAuthError("Couldn't reach the sign-in service. Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +154,15 @@ export default function LoginPage() {
                     Use demo login
                   </button>
                 </motion.div>
+
+                {authError && (
+                  <div
+                    role="alert"
+                    className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+                  >
+                    {authError}
+                  </div>
+                )}
 
                 <motion.div variants={itemVariants}>
                   <Button type="submit" className="w-full" disabled={isLoading}>

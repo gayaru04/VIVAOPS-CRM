@@ -70,7 +70,14 @@ export default async function TasksPage() {
                   {done.map((task) => (
                     <div key={task.id} className="flex items-center justify-between px-4 py-3">
                       <p className="text-[13px] line-through text-text-3">{task.title}</p>
-                      <StatusBadge status={task.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={task.status} />
+                        <form action={updateTaskStatus.bind(null, task.id, "todo")}>
+                          <SubmitButton variant="outline" className="h-7 px-2.5 text-[12px] font-medium rounded-md border border-border text-text-3 hover:bg-hover hover:text-foreground">
+                            Reopen
+                          </SubmitButton>
+                        </form>
+                      </div>
                     </div>
                   ))}
                 </div>

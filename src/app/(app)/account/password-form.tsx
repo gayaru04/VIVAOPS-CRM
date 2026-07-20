@@ -13,11 +13,15 @@ export function PasswordForm() {
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
       try {
-        await updatePassword(fd);
+        const result = await updatePassword(fd);
+        if (result?.error) {
+          toast.error(result.error);
+          return;
+        }
         toast.success("Password updated successfully");
         formRef.current?.reset();
-      } catch (err) {
-        toast.error(String(err));
+      } catch {
+        toast.error("Couldn't update the password — please try again.");
       }
     });
   }

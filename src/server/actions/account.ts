@@ -17,15 +17,22 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/account");
 }
 
-export async function updatePassword(formData: FormData) {
-  await requireUser();
+const DEMO_EMAIL = "demo@vivamelbourne.com.au";
+
+// Returns { error } instead of throwing — Next.js masks thrown messages in prod
+export async function updatePassword(formData: FormData): Promise<{ error?: string }> {
+  const user = await requireUser();
   const password = formData.get("password") as string;
   const confirm = formData.get("confirm") as string;
 
-  if (!password || password.length < 6) throw new Error("Password must be at least 6 characters");
-  if (password !== confirm) throw new Error("Passwords do not match");
+  if (user.email === DEMO_EMAIL) {
+    return { error: "Password changes are disabled for the shared demo account." };
+  }
+  if (!password || password.length < 6) return { error: "Password must be at least 6 characters" };
+  if (password !== confirm) return { error: "Passwords do not match" };
 
   const supabase = createClient();
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw new Error(error.message);
+  if (error) return { error: error.message };
+  return {};
 }

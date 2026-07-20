@@ -13,11 +13,17 @@ export function DeleteLeadButton({ leadId, leadName }: { leadId: string; leadNam
   function handleDelete() {
     startTransition(async () => {
       try {
-        await deleteLead(leadId);
+        const result = await deleteLead(leadId);
+        if (result?.error) {
+          toast.error(result.error);
+          setOpen(false);
+          return;
+        }
         toast.success(`Deleted lead ${leadName}`);
         router.push("/leads");
-      } catch (err) {
-        toast.error(String(err));
+      } catch {
+        toast.error("Couldn't delete the lead — please try again.");
+        setOpen(false);
       }
     });
   }

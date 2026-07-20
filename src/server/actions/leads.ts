@@ -1,10 +1,10 @@
 "use server";
 import { db } from "@/lib/db";
-import { leads, clients, events } from "@/lib/db/schema";
+import { leads, clients, events, comms } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { createLeadSchema, updateLeadSchema } from "@/lib/validators";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -120,16 +120,36 @@ export async function convertLeadToEvent(leadId: string, formData: FormData) {
   redirect(`/events/${event.id}`);
 }
 
-export async function deleteLead(id: string) {
+// Returns { error } instead of throwing: Next.js masks thrown error messages
+// in production, which is exactly how this used to fail silently in the UI.
+export async function deleteLead(id: string): Promise<{ error?: string }> {
   const user = await requireRole("admin", "manager");
+
+  const [lead] = await db.select().from(leads)
+    .where(and(eq(leads.id, id), eq(leads.orgId, user.orgId))).limit(1);
+  if (!lead) return { error: "Lead not found" };
+
+  if (lead.status === "converted" || lead.convertedToEventId) {
+    return { error: "Can't delete a converted lead — cancel or delete its event first." };
+  }
+  const [linkedEvent] = await db.select({ id: events.id }).from(events)
+    .where(eq(events.leadId, id)).limit(1);
+  if (linkedEvent) {
+    return { error: "Can't delete this lead — an event is linked to it." };
+  }
+
+  // Comms reference the lead with no cascade; remove them first
+  await db.delete(comms).where(eq(comms.leadId, id));
   await db.delete(leads).where(eq(leads.id, id));
+
   await logAudit({
     orgId: user.orgId,
     actor: user.id,
     action: "lead.deleted",
     entityType: "lead",
     entityId: id,
-    summary: `Deleted lead`,
+    summary: `Deleted lead: ${lead.name}`,
   });
   revalidatePath("/leads");
+  return {};
 }
