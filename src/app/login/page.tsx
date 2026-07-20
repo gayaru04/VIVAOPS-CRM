@@ -33,11 +33,17 @@ const itemVariants = {
 };
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+  const [isNavigating, startNavigation] = React.useTransition();
   const [authError, setAuthError] = React.useState<string | null>(null);
   const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
+
+  // Busy from click → auth round-trip → dashboard fully rendered. Resetting the
+  // spinner before navigation finishes made the page look idle mid-login, which
+  // read as "the button didn't work" and invited a second press.
+  const isLoading = isAuthenticating || isNavigating;
 
   React.useEffect(() => setMounted(true), []);
 
@@ -47,7 +53,8 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: FormValues) {
-    setIsLoading(true);
+    if (isLoading) return;
+    setIsAuthenticating(true);
     setAuthError(null);
     try {
       const supabase = createClient();
@@ -60,12 +67,16 @@ export default function LoginPage() {
         );
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      // isNavigating stays true until the dashboard has actually rendered,
+      // so the button spinner covers the whole journey with no idle gap
+      startNavigation(() => {
+        router.push("/dashboard");
+        router.refresh();
+      });
     } catch {
       setAuthError("Couldn't reach the sign-in service. Check your connection and try again.");
     } finally {
-      setIsLoading(false);
+      setIsAuthenticating(false);
     }
   }
 
@@ -167,7 +178,7 @@ export default function LoginPage() {
                 <motion.div variants={itemVariants}>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign in
+                    {isLoading ? "Signing in…" : "Sign in"}
                   </Button>
                 </motion.div>
               </form>
