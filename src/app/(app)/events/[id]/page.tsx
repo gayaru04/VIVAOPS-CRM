@@ -11,7 +11,7 @@ import { notFound } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { fmtDate, fmtMoney, fmtTime } from "@/lib/utils";
+import { fmtDate, fmtMoney, fmtTime, todayInMelbourne } from "@/lib/utils";
 import { updateEventStage, cloneEvent } from "@/server/actions/events";
 import { updateTaskStatus } from "@/server/actions/tasks";
 import { createComm } from "@/server/actions/comms";
@@ -105,8 +105,16 @@ export default async function EventDetailPage({ params }: { params: { id: string
   const assignedUserIds = new Set(staffRows.map((r) => r.staff.userId));
   const unassignedUsers = orgUsers.filter((u) => !assignedUserIds.has(u.id));
 
+  // Diff calendar dates (both as UTC midnight) rather than a raw timestamp
+  // against Date.now() — the latter drifts by up to a day depending on the
+  // server's UTC time vs. Melbourne's, same class of bug as the earlier
+  // dashboard/hydration timezone fix.
   const daysToGo = event.eventDate
-    ? Math.ceil((new Date(event.eventDate).getTime() - Date.now()) / 86_400_000)
+    ? Math.round(
+        (new Date(`${event.eventDate}T00:00:00Z`).getTime() -
+          new Date(`${todayInMelbourne()}T00:00:00Z`).getTime()) /
+          86_400_000
+      )
     : null;
 
   return (

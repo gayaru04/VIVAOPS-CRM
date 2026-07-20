@@ -38,7 +38,7 @@ export default async function LeadsPage({
 
   return (
     <>
-      <PageHeader eyebrow={`Records · ${rows.length} leads`} title="Leads" sub="Inbound and outbound inquiries.">
+      <PageHeader eyebrow={`Records · ${rows.length} ${rows.length === 1 ? "lead" : "leads"}`} title="Leads" sub="Inbound and outbound inquiries.">
         <Button asChild size="sm">
           <Link href="/leads/new"><Plus className="h-3 w-3" /> New lead</Link>
         </Button>
